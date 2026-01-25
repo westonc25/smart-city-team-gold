@@ -6,3 +6,4 @@
   - nkoos001 - Nick Kooshki - nkoos001@odu.edu
   - CarlosMollCS - Carlos Moll Rolon - cmoll004@odu.edu
   - TonyCairuz - Tony Cairuz - tcair002@odu.edu
+  - DerrickS33 - Derrick Stewart - dstew025@odu.edu
