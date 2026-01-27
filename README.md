@@ -1,4 +1,4 @@
-# Team Gold - Fall 2026
+# Team Gold - Spring 2026
 
 # Members
   - westonc25 - Weston Carmack - wcarm002@odu.edu
