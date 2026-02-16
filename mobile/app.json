@@ -8,6 +8,11 @@
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
+    "extra": {
+      "MAPBOX_TOKEN": "MAPBOX_TOKEN"
+    },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.mobile"
@@ -28,6 +33,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "MAPBOX_TOKEN"
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
