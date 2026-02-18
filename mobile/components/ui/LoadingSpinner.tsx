@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, View, ViewStyle } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface LoadingSpinnerProps {
     size?: 'small' | 'large';
