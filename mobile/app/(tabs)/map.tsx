@@ -4,65 +4,78 @@ import { useRef, useEffect, useState } from 'react';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 
-Mapbox.setAccessToken('MAPBOX_TOKEN');
+import { View } from 'react-native';
+import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '');
 
 export default function MapScreen() {
   const cameraRef = useRef<Mapbox.Camera>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
-  //Retrieves location
-  useEffect(() => 
-  {
-    const getLocation = async () => 
-    {
+  const centerOnUser = async () => {
+    if (!userLocation && !isLocating) {
+      setIsLocating(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status === 'granted') 
-      {
+      if (status === 'granted') {
         const location = await Location.getCurrentPositionAsync({});
-        const { longitude, latitude } = location.coords;
-        setUserLocation([longitude, latitude]);
+        setUserLocation([location.coords.longitude, location.coords.latitude]);
       }
-    };
+      setIsLocating(false);
+    }
 
-    getLocation();
-  }, []);
-
-  //Moves to location upon update
-  useEffect(() => 
-  {
-    if (userLocation && cameraRef.current) 
-    {
-      cameraRef.current.setCamera(
-      {
+    if (userLocation && cameraRef.current) {
+      cameraRef.current.setCamera({
         centerCoordinate: userLocation,
-        zoomLevel: 14,
+        zoomLevel: 15,
         animationDuration: 1000,
       });
     }
-  }, [userLocation]);
+  };
+
+  useEffect(() => {
+    centerOnUser();
+  }, []);
 
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <Mapbox.MapView style={{ flex: 1 }}>
+    <ThemedView style={styles.container}>
+      <Mapbox.MapView style={styles.map}>
         <Mapbox.Camera
           ref={cameraRef}
-          followUserLocation={true}
-          followZoomLevel={14}
+          followZoomLevel={15}
         />
-
-        <Mapbox.UserLocation visible={true} />
+        <Mapbox.LocationPuck
+          puckBearingEnabled
+          puckBearing="heading"
+          pulsing={{ isEnabled: true }}
+        />
       </Mapbox.MapView>
+
+      <View style={styles.controls}>
+        <Button
+          title="Recenter"
+          onPress={centerOnUser}
+          loading={isLocating}
+          variant="primary"
+        />
+      </View>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create(
-{
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+  },
+  map: {
+    flex: 1,
+  },
+  controls: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    gap: 12,
   },
 });
