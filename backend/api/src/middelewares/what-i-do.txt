@@ -1,0 +1,2 @@
+Can add things like logging, authentication, error handling here
+Example: checking if a user is logged in
