@@ -1,0 +1,2 @@
+Handle requests from your frontend.
+Call the services and return a response.
