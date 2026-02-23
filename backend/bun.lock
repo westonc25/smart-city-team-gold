@@ -5,6 +5,7 @@
     "": {
       "name": "backend",
       "dependencies": {
+        "@sinclair/typebox": "^0.34.48",
         "elysia": "latest",
       },
       "devDependencies": {
