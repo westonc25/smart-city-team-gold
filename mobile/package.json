@@ -15,7 +15,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.28",
-    "@react-navigation/stack": "^7.7.1",
+    "@react-navigation/stack": "^7.7.2",
     "@rnmapbox/maps": "^10.2.10",
     "expo": "^54.0.33",
     "expo-build-properties": "^1.0.10",
@@ -39,7 +39,7 @@
     "react-native-gesture-handler": "~2.28.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "^5.6.2",
-    "react-native-screens": "^4.23.0",
+    "react-native-screens": "^4.24.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1"
   },
