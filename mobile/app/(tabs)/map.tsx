@@ -6,9 +6,8 @@ import * as Location from 'expo-location';
 
 import { View } from 'react-native';
 import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '');
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || 'REMOVED_TOKEN');
 
 export default function MapScreen() {
   const cameraRef = useRef<Mapbox.Camera>(null);
