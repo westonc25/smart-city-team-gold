@@ -1,21 +1,19 @@
 import { Elysia } from "elysia";
+import { swagger } from '@elysiajs/swagger'
 import "./db";
-import { authRoutes } from "./routes/auth";
-import { userRoutes } from "./routes/users";
-// import { forumRoutes } from "./routes/forum";
-// import { locationRoutes } from "./routes/locations";
-// import { notificationRoutes } from "./routes/notifications";
+import { auth } from "./modules/auth";
+import { users } from "./modules/users";
+import { forum } from "./modules/forum";
+// import { map } from "./modules/map";
+// import { notifications } from "./modules/notifications";
 
 const app = new Elysia()
-  .get("/", () => "Smart City API")
-  .use(authRoutes)
-  .use(userRoutes)
+  .use(swagger())
 
-  /*
-  .use(forumRoutes)
-  .use(locationRoutes)
-  .use(notificationRoutes)
-  */
+  .get("/", () => "Smart City API")
+  .use(auth)
+  .use(users)
+  .use(forum)
 
   .listen(3000);
 
