@@ -1,0 +1,49 @@
+import type { AuthModel } from './model'
+import { status } from 'elysia'
+import { db } from "../../db";
+
+export abstract class AuthService {
+    // Login
+    static async login({ email, password }: AuthModel.loginBody) {
+        // Look up the user by email
+        const [user] = await db`
+        SELECT email, password_hash
+        FROM users
+        WHERE email = ${email}
+        LIMIT 1
+        `;
+        
+        // Check if user exists
+        if (!user) throw status(401, 'Invalid credentials')
+
+        // Check if the password matches 
+        const passwordMatch = await Bun.password.verify(password, user.password_hash)
+        if (!passwordMatch) throw status(401, 'Invalid credentials')
+
+        return user;
+    }
+
+    // Signup
+    static async signup({email, password, first_name, last_name}: AuthModel.signUpBody){
+        // Check if the email already exists in the database
+        const existing = await db`
+        SELECT email 
+        FROM users 
+        WHERE email = ${email}`;
+        
+        // If it does, reject the email
+        if (existing.length) return new Response("Email already in use", { status: 409 });
+        
+        // Hash the password before inserting
+        const hashedPassword = await Bun.password.hash(password);
+
+        // If not, insert new user into database
+        await db`
+        INSERT INTO users (email, password_hash, first_name, last_name, created_at, updated_at, is_active, auth_provider)
+        VALUES (${email}, ${hashedPassword}, ${first_name}, ${last_name}, NOW(), NOW(), 1, 'local')
+        `;
+
+    return { success: true };
+    
+    }
+}
