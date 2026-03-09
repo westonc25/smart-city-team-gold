@@ -1,17 +1,25 @@
+/*
+  Bottom sheet for the create post UI on the forum.
+
+  Current implementation builds a frontend only ForumPost object and passes it
+  up to the parent screen. Backend integration will replace that flow with
+  a real create post API request 
+*/
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumCategory, ForumPost } from '@/types/forum';
 import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    TextInput,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from 'react-native';
 
 type CreatePostModalProps = {
@@ -20,6 +28,8 @@ type CreatePostModalProps = {
   onSubmit: (post: ForumPost) => void;
 };
 
+// Current post categories used by the create post UI.
+// This can be replaced with backend categories when that integration happens
 const categories: ForumCategory[] = ['General', 'Events', 'Safety', 'Question'];
 
 export function CreatePostModal({
@@ -27,6 +37,7 @@ export function CreatePostModal({
   onClose,
   onSubmit,
 }: CreatePostModalProps) {
+  // Local form state for new post creation.
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<ForumCategory>('General');
@@ -52,6 +63,7 @@ export function CreatePostModal({
     'background'
   );
 
+  // Resets fields so old input is cleared before the next open
   const resetForm = () => {
     setTitle('');
     setContent('');
@@ -63,12 +75,24 @@ export function CreatePostModal({
     onClose();
   };
 
+  /*
+    CURRENT BEHAVIOR:
+    Validates user input, creates a frontend only ForumPost object,
+    and sends it upward to ForumScreen.
+
+    BACKEND INTEGRATION:
+    This should eventually call a create post endpoint and use the
+    saved post returned by the backend.
+  */
   const handleSubmit = () => {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
     if (!trimmedTitle || !trimmedContent) {
-      Alert.alert('Missing information', 'Please enter both a title and post content.');
+      Alert.alert(
+        'Missing information',
+        'Please enter both a title and post content.'
+      );
       return;
     }
 
@@ -88,13 +112,15 @@ export function CreatePostModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
+      {/* Helps prevent the keyboard from covering the input fields. */}
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ThemedView style={[styles.modalCard, { backgroundColor: modalBg }]}>
           <ThemedText type="subtitle">Create Post</ThemedText>
           <ThemedText style={[styles.helperText, { color: mutedTextColor }]}>
-            Share an update, event, question, or safety concern with the community.
+            Share an update, event, question, or safety concern with the
+            community.
           </ThemedText>
 
           <ThemedText style={styles.label}>Category</ThemedText>
