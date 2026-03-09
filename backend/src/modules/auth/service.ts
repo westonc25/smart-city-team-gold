@@ -4,7 +4,7 @@ import { db } from "../../db";
 
 export abstract class AuthService {
     // Login
-    static async login({ email, password }: AuthModel.loginBody) {
+    static async login({ email , password }: AuthModel.loginBody) {
         // Look up the user by email
         const [user] = await db`
         SELECT email, password_hash
