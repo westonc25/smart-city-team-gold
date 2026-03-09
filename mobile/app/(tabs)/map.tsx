@@ -1,13 +1,13 @@
-import { StyleSheet, View, Text } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
-import { useRef, useEffect, useState, useCallback } from 'react';
 import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SearchBar } from '@/components/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { MapLoadingOverlay } from '@/components/ui/MapLoadingOverlay';
-import { SearchBar } from '@/components/ui/SearchBar';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '');
