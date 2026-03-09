@@ -1,25 +1,24 @@
 import { Elysia } from 'elysia'
 
-import { forumModel } from './model'
+import { ForumModel } from './model'
 // Import services once implemented
 
 export const forum = new Elysia({ prefix: '/forum' })
-    .use(forumModel)
 
     // Gets all the posts from the forum
 
     .get("/posts", () => 'Route Accessed, All Posts Pulled')
-    
+
     // Given an ID, gets a specific post
-    
+
     .get("/posts/:id", () => 'Route Accessed, Post Pulled')
 
-    // Create a post 
+    // Create a post
 
-    .post("/posts", () => 'Route Accessed, Post Created', { body: 'forum.createPost' })
+    .post("/posts", () => 'Route Accessed, Post Created', { body: ForumModel.createPost })
 
      // Given an ID, delete a post from the forum
-    
+
     .delete("/posts/:id", () => 'Route Accessed, Post Deleted')
 
     // Given an ID, get a comment
@@ -30,4 +29,4 @@ export const forum = new Elysia({ prefix: '/forum' })
 
     .post("/posts/:id/comments",
          () => 'Route Accessed, Comment Created',
-          { body: 'forum.createComment' })
+          { body: ForumModel.createComment })

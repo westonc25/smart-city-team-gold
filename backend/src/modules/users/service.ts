@@ -1,7 +1,7 @@
 import { status } from 'elysia'
 import { db } from "../../db";
 
-import { userModel } from './model'
+import { UserModel } from './model'
 
 export abstract class UserService {
 
@@ -37,10 +37,10 @@ export abstract class UserService {
         UPDATE users
         SET
             first_name = ${data.first_name ? data.first_name : undefined},
-            last_name = ${data.last_name ? data.last_name : undefined}
-            email = ${data.email ? data.email : undefined}
-            profile_picture = ${data.profile_picture ? data.profile_picture : undefined}
-            password = ${data.password ? data.password : undefined}
+            last_name = ${data.last_name ? data.last_name : undefined},
+            email = ${data.email ? data.email : undefined},
+            profile_picture = ${data.profile_picture ? data.profile_picture : undefined},
+            password = ${data.password ? data.password : undefined},
         WHERE userID = ${id}
         `
 

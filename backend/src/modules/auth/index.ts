@@ -1,20 +1,17 @@
 import { Elysia } from 'elysia'
 
-import { authModel } from "./model";
-// Import Services when implemented
+import { AuthModel } from "./model";
+import { AuthService } from "./service";
 
 export const auth = new Elysia({prefix: '/auth'})
-    .use(authModel)
 
     // Have a user sign up for the app and send their credentials to the database
 
-    .post('/signup', ()=> 'Route Accessed', { body: 'auth.signup' })
-    
+    .post('/signup', ({ body }) => AuthService.signup(body), { body: AuthModel.signUpBody })
+
     // Have a user login to the app and send their credentials to the database
 
-    .post('/login', ()=> 'Route Accessed', { body: 'auth.login' })
-
-    // Delete a user profile from the app
+    .post('/login', ({ body }) => AuthService.login(body), { body: AuthModel.loginBody })
 
 
 

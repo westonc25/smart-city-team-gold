@@ -1,16 +1,15 @@
 import { Elysia } from 'elysia'
 
-import { userModel } from './model'
-// Import services once implemented
+import { UserModel } from './model'
+import { UserService } from './service'
 
 export const users = new Elysia({ prefix: '/users' })
-    .use(userModel)
 
     // Given an ID, get a users information from the database
-    .get('/:id', () => "Route Accessed")
+    .get('/:id', ({ params }) => UserService.getUser(Number(params.id)))
 
     // Given an ID, update a users information in the database
-    .put('/:id', () => 'Route Accessed', { body: 'users.updateUser'})
+    .put('/:id', ({ params, body }) => UserService.updateUser(Number(params.id), body), { body: UserModel.updateUser })
 
     // Given an ID, delete a user from the database
-    .delete('/:id', () => 'Route Accessed')
+    .delete('/:id', ({ params }) => UserService.deleteUser(Number(params.id)))

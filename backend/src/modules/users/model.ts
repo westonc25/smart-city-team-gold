@@ -1,13 +1,18 @@
-import { Elysia , t } from 'elysia'
+import { t } from 'elysia'
+import { type UnwrapSchema } from 'elysia'
 
 // Schemas
 
-const updateUser = t.Object({
-    full_name: t.Optional(t.String()),
-    email: t.Optional(t.String())
-})
+export const UserModel = {
+    updateUser: t.Object({
+        first_name: t.Optional(t.String()),
+        last_name: t.Optional(t.String()),
+        email: t.Optional(t.String()),
+        // profile_picture: t.Optional(t.File()),
+        password: t.Optional(t.String())
+    })
+} as const
 
-export const userModel = new Elysia()
-    .model({ 
-        "users.updateUser": updateUser
-     })
+export namespace UserModel {
+    export type updateUser = UnwrapSchema<typeof UserModel.updateUser>
+}
