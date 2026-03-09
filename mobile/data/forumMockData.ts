@@ -9,6 +9,20 @@ export const forumMockPosts: ForumPost[] = [
       'A few streetlights near Main St and 4th Ave were out last night. Has anyone else noticed this?',
     category: 'Safety',
     createdAt: '2h ago',
+    comments: [
+      {
+        id: 'c1',
+        author: 'Maya Chen',
+        content: 'I noticed this too near the corner by the pharmacy.',
+        createdAt: '1h ago',
+      },
+      {
+        id: 'c2',
+        author: 'Jordan Smith',
+        content: 'We should probably report it through the city office tomorrow.',
+        createdAt: '45m ago',
+      },
+    ],
   },
   {
     id: '2',
@@ -18,6 +32,14 @@ export const forumMockPosts: ForumPost[] = [
       'We are meeting at 9 AM at the central park entrance for a neighborhood clean up. Everyone is welcome.',
     category: 'Events',
     createdAt: '5h ago',
+    comments: [
+      {
+        id: 'c3',
+        author: 'Alex Johnson',
+        content: 'I’ll be there. Are gloves and trash bags provided?',
+        createdAt: '3h ago',
+      },
+    ],
   },
   {
     id: '3',
@@ -27,5 +49,6 @@ export const forumMockPosts: ForumPost[] = [
       'I heard the city was planning to expand bike lanes downtown. Does anyone know the timeline?',
     category: 'Question',
     createdAt: '1d ago',
+    comments: [],
   },
 ];

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  FlatList,
   Pressable,
   StyleSheet,
   View,
@@ -8,12 +7,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
-import { ForumPostCard } from '@/components/forum/ForumPostCard';
+import { ForumFeed } from '@/components/forum/ForumFeed';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { forumMockPosts } from '@/data/forumMockData';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ForumPost } from '@/types/forum';
+import { ForumComment, ForumPost } from '@/types/forum';
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
@@ -41,6 +40,26 @@ export default function ForumScreen() {
 
   const handleAddPost = (newPost: ForumPost) => {
     setPosts((prev) => [newPost, ...prev]);
+  };
+
+  const handleAddComment = (postId: string, commentText: string) => {
+    const newComment: ForumComment = {
+      id: Date.now().toString(),
+      author: 'Resident User',
+      content: commentText,
+      createdAt: 'Just now',
+    };
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: [...(post.comments ?? []), newComment],
+            }
+          : post
+      )
+    );
   };
 
   return (
@@ -80,13 +99,7 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ForumPostCard post={item} />}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
+        <ForumFeed posts={posts} onAddComment={handleAddComment} />
       )}
 
       <CreatePostModal
@@ -125,10 +138,6 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#ffffff',
     fontWeight: '700',
-  },
-  listContent: {
-    paddingBottom: 32,
-    gap: 12,
   },
   emptyState: {
     flex: 1,
