@@ -1,3 +1,12 @@
+/*
+  TEMPORARY MOCK DATA:
+
+  Used for frontend development before backend forum endpoints are connected.
+
+  BACKEND INTEGRATION:
+  Replace this file with real data fetched from the backend.
+*/
+
 import { ForumPost } from '@/types/forum';
 
 export const forumMockPosts: ForumPost[] = [
@@ -23,6 +32,10 @@ export const forumMockPosts: ForumPost[] = [
         createdAt: '45m ago',
       },
     ],
+
+    // location fields for map/forum integration (not sure how yall wanna set this up but including for completeness)
+    latitude: 36.8508,
+    longitude: -76.2859,
   },
   {
     id: '2',
@@ -40,6 +53,9 @@ export const forumMockPosts: ForumPost[] = [
         createdAt: '3h ago',
       },
     ],
+
+    latitude: 36.8525,
+    longitude: -76.2891,
   },
   {
     id: '3',

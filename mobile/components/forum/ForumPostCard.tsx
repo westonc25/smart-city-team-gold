@@ -1,14 +1,18 @@
+/*
+  Reusable card for displaying a single forum post.
+
+  This component renders post content, expands/collapse comments, and
+  allows comment input for that specific post
+
+  Backend team will replace local comment creation flow with real API backed comment creation
+*/
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumPost } from '@/types/forum';
 import { useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 type ForumPostCardProps = {
   post: ForumPost;
@@ -16,7 +20,10 @@ type ForumPostCardProps = {
 };
 
 export function ForumPostCard({ post, onAddComment }: ForumPostCardProps) {
+  // Controls whether this post currently shows its comments section.
   const [showComments, setShowComments] = useState(false);
+
+  // Local input state for adding a comment to this specific post.
   const [commentText, setCommentText] = useState('');
 
   const borderColor = useThemeColor(
@@ -40,8 +47,17 @@ export function ForumPostCard({ post, onAddComment }: ForumPostCardProps) {
     'background'
   );
 
+  // Handles cases where comments may not exist yet.
   const commentCount = post.comments?.length ?? 0;
 
+  /*
+    CURRENT BEHAVIOR:
+    Sends trimmed comment text upward to ForumScreen, which updates local state.
+
+    BACKEND INTEGRATION:
+    This flow should eventually create the comment through the backend
+    for the current post id.
+  */
   const handleSubmitComment = () => {
     const trimmed = commentText.trim();
     if (!trimmed) return;
@@ -81,6 +97,7 @@ export function ForumPostCard({ post, onAddComment }: ForumPostCardProps) {
         </Pressable>
       </View>
 
+      {/* Comments render only when expanded so the default feed stays cleaner. */}
       {showComments && (
         <View style={styles.commentsSection}>
           {commentCount === 0 ? (
@@ -103,6 +120,7 @@ export function ForumPostCard({ post, onAddComment }: ForumPostCardProps) {
             ))
           )}
 
+          {/* Inline comment input for this post only. */}
           <View style={styles.commentInputRow}>
             <TextInput
               value={commentText}
@@ -136,6 +154,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
     marginBottom: 12,
+
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
