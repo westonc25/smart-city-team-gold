@@ -2,13 +2,23 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumPost } from '@/types/forum';
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 
 type ForumPostCardProps = {
   post: ForumPost;
+  onAddComment: (postId: string, commentText: string) => void;
 };
 
-export function ForumPostCard({ post }: ForumPostCardProps) {
+export function ForumPostCard({ post, onAddComment }: ForumPostCardProps) {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+
   const borderColor = useThemeColor(
     { light: '#e5e7eb', dark: '#2a2f37' },
     'text'
@@ -25,6 +35,21 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
     { light: '#0a7ea4', dark: '#4FC3F7' },
     'tint'
   );
+  const inputBg = useThemeColor(
+    { light: '#f9fafb', dark: '#1f2937' },
+    'background'
+  );
+
+  const commentCount = post.comments?.length ?? 0;
+
+  const handleSubmitComment = () => {
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+
+    onAddComment(post.id, trimmed);
+    setCommentText('');
+    setShowComments(true);
+  };
 
   return (
     <ThemedView style={[styles.card, { borderColor }]}>
@@ -47,6 +72,59 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
           Posted by {post.author}
         </ThemedText>
       </View>
+
+      <View style={styles.actionRow}>
+        <Pressable onPress={() => setShowComments((prev) => !prev)}>
+          <ThemedText style={[styles.actionText, { color: accentColor }]}>
+            {showComments ? 'Hide comments' : `View comments (${commentCount})`}
+          </ThemedText>
+        </Pressable>
+      </View>
+
+      {showComments && (
+        <View style={styles.commentsSection}>
+          {commentCount === 0 ? (
+            <ThemedText style={[styles.noCommentsText, { color: mutedTextColor }]}>
+              No comments yet.
+            </ThemedText>
+          ) : (
+            post.comments?.map((comment) => (
+              <View key={comment.id} style={[styles.commentCard, { borderColor }]}>
+                <ThemedText style={styles.commentAuthor}>
+                  {comment.author}
+                </ThemedText>
+                <ThemedText style={styles.commentContent}>
+                  {comment.content}
+                </ThemedText>
+                <ThemedText style={[styles.commentTime, { color: mutedTextColor }]}>
+                  {comment.createdAt}
+                </ThemedText>
+              </View>
+            ))
+          )}
+
+          <View style={styles.commentInputRow}>
+            <TextInput
+              value={commentText}
+              onChangeText={setCommentText}
+              placeholder="Write a comment..."
+              placeholderTextColor={mutedTextColor}
+              style={[
+                styles.commentInput,
+                {
+                  borderColor,
+                  backgroundColor: inputBg,
+                },
+              ]}
+            />
+            <Pressable
+              style={[styles.commentButton, { backgroundColor: accentColor }]}
+              onPress={handleSubmitComment}>
+              <ThemedText style={styles.commentButtonText}>Post</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -57,6 +135,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     gap: 8,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',
@@ -76,7 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     lineHeight: 24,
   },
@@ -90,5 +174,59 @@ const styles = StyleSheet.create({
   },
   authorText: {
     fontSize: 13,
+  },
+  actionRow: {
+    marginTop: 4,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  commentsSection: {
+    marginTop: 8,
+    gap: 8,
+  },
+  noCommentsText: {
+    fontSize: 14,
+  },
+  commentCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    gap: 4,
+  },
+  commentAuthor: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  commentContent: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  commentTime: {
+    fontSize: 12,
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  commentInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  commentButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  commentButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
 });
