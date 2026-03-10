@@ -20,18 +20,30 @@ export abstract class UserService {
 
   // Catch all for forum post search parameters
   // Need the postID or the userID or the time and location
-  static async getForumPost() {
-    const [row] = await db`
-        
-        `;
+  static async getForumPost(id: number) {
+    const [post] = await db`
+        SELECT *
+        FROM forum_post
+        WHERE post_id = ${id}
+        LIMIT 1`;
+
+        if (!post) throw status (404, "Post not found");
+
+        return post;
   }
 
   // Catch all for comment search parameters
   // Need the postID or the userID
-  static async getComment() {
-    const [row] = await db`
-        
-        `;
+  static async getComment(id: number) {
+    const [comment] = await db`
+        SELECT *
+        FROM forum_comments
+        WHERE comment_id = ${id}
+        LIMIT 1`;
+
+        if (!comment) throw status (404, "Comment not found");
+
+        return comment;
   }
 
   // Delete a forum post given the postID
