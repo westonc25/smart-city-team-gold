@@ -54,14 +54,21 @@ export abstract class UserService {
     // Delete a user
     static async deleteUser({id}: UserModel.deleteUser){
         
-        const [row] = await db`
-        DELETE FROM users
+        const [user] = await db`
+        SELECT userID FROM users
         WHERE userID = ${id}
         LIMIT 1`;
+        
+        if (!user) throw status (404, "User not found");
+        
+        await db`
+        DELETE FROM users
+        WHERE userID = ${id}
+        `;
 
-        if (!row) throw status (404, "User not found");
+        
 
-        return row;
+        return user;
     }
 
 }
