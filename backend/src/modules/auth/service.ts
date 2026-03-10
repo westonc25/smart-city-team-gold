@@ -7,20 +7,43 @@ export abstract class AuthService {
     static async login({ email, password }: AuthModel.loginBody) {
         // Look up the user by email
         const [user] = await db`
-        SELECT email, password_hash
+        SELECT userID, email, password_hash
         FROM users
         WHERE email = ${email}
         LIMIT 1
         `;
-        
+
         // Check if user exists
         if (!user) throw status(401, 'Invalid credentials')
 
-        // Check if the password matches 
+        // Check if the password matches
         const passwordMatch = await Bun.password.verify(password, user.password_hash)
         if (!passwordMatch) throw status(401, 'Invalid credentials')
 
-        return user;
+        return { id: user.userID, email: user.email };
+    }
+
+    // Create a session row after successful login
+    static async createSession(userId: number, jti: string, expiresAt: Date) {
+        await db`
+        INSERT INTO sessions (user_id, jti, expires_at)
+        VALUES (${userId}, ${jti}, ${expiresAt})
+        `;
+    }
+
+    // Delete a session on logout
+    static async deleteSession(jti: string) {
+        await db`DELETE FROM sessions WHERE jti = ${jti}`;
+    }
+
+    // Check the session still exists and hasn't expired
+    static async validateSession(jti: string): Promise<boolean> {
+        const [session] = await db`
+        SELECT id FROM sessions
+        WHERE jti = ${jti} AND expires_at > NOW()
+        LIMIT 1
+        `;
+        return !!session;
     }
 
     // Signup
