@@ -5,17 +5,37 @@ import { ForumModel } from "./model";
 
 export abstract class UserService {
   // Store a new created forum post
-  static async createPost() {
-    const [row] = await db`
-        
+  static async createPost({user_id, title, content, latitude, longitude, location_name, category}: ForumModel.createPost) {
+    
+    // Insert the post into the database
+    const [row] = await db` 
+    INSERT INTO forum_post (user_id, title, content, latitude, longitude, location_name, category)
+    VALUES (${user_id}, ${title}, ${content}, ${latitude}, ${longitude}, ${location_name}, ${category})
+    RETURNING *    
         `;
   }
 
   // Store a new created comment on a forum post
-  static async createComment() {
-    const [row] = await db`
-        
+  static async createComment({ post_id, user_id, content }: ForumModel.createComment) {
+    
+    // Retreive the post to ensure it exists
+    const [post] = await db`
+        SELECT post_id FROM forum_post
+        WHERE post_id = ${post_id}
+        LIMIT 1
         `;
+
+    // If the post doesn't exist, throw an error
+    if (!post) throw status(404, "Post not found");
+
+    // Insert the comment into the database
+    const [comment] = await db`
+      INSERT INTO forum_comments (post_id, user_id, content, created_at, updated_at)
+      VALUES (${post_id}, ${user_id}, ${content}, NOW(), NOW())
+      RETURNING *
+    `;
+
+    return comment;
   }
 
   // Catch all for forum post search parameters
