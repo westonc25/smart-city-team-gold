@@ -2,20 +2,47 @@ import { status } from "elysia";
 import { db } from "../../db";
 
 import { ForumModel } from "./model";
+import { AuthService} from "../auth/service";
 
 export abstract class UserService {
   // Store a new created forum post
-  static async createPost({user_id, title, content, latitude, longitude, location_name, category}: ForumModel.createPost) {
+  static async createPost({jti, title, content ,location_name, category}: ForumModel.createPost) {
     
-    // Add center point of where the post was made from
+    // Get user current locaiton
+    // Talk to sessions table first
+    // Get the latitude and longitude from the point variable in the current location table
+    const [session] = await AuthService.getSessionWithLocation(jti);
+    if (!session) throw new Error("Invalid or expired session");
+
+    // Pass the lat and lon to the forum post table
+    // Store the lat and lon in the form of a point
+    // Add the post to the database with the new point variable
+    await db`
+        INSERT INTO forum_post (user_session_id, title, content, location_name, category, geo_point)
+        VALUES (
+            ${session.sessions_id},
+            ${title},
+            ${content},
+            ${location_name},
+            ${category},
+            ${session.geo_point}
+        )
+    `;
 
 
-    // Insert the post into the database
-    const [row] = await db` 
-    INSERT INTO forum_post (user_id, title, content, latitude, longitude, location_name, category)
-    VALUES (${user_id}, ${title}, ${content}, ${latitude}, ${longitude}, ${location_name}, ${category})
-    RETURNING *    
-        `;
+   // Check that the post was created successfully
+    const [row] = await db`
+        SELECT * FROM forum_post
+        WHERE user_session_id = ${session.sessions_id}
+        ORDER BY created_at DESC
+        LIMIT 1
+    `;
+
+    if (!row) throw new Error("Post creation failed");
+
+    // Return success message
+    return { success: true, message: "Post created successfully", post: row };
+
   }
 
   // Store a new created comment on a forum post

@@ -69,4 +69,20 @@ export abstract class AuthService {
     return { success: true };
     
     }
+
+    // Get location by session token
+    static async getSessionWithLocation(jti: string) {
+        const [session] = await db`
+            SELECT 
+                s.sessions_id,
+                s.user_id,
+                cl.geo_point
+            FROM sessions s
+            JOIN current_location cl ON s.location_id = cl.current_location_id
+            WHERE s.jti = ${jti}
+            AND s.expires_at > NOW()
+    `;
+
+    return session ?? null;
+}
 }
