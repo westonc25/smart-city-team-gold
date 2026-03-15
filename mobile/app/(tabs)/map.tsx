@@ -86,45 +86,53 @@ export default function MapScreen() {
   }, []);
 
   const handleSearch = useCallback((query: string) => {
-    console.log("SEARCH QUERY:", query);
-    setIsSearching(true);
+  console.log("SEARCH QUERY:", query);
+  setIsSearching(true);
 
-    
-    const fetchMapboxSearch = async () => {
-      if (!query) return;
+  const fetchMapboxSearch = async () => {
+    if (!query || !userLocation) return;
 
-      try {
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?proximity=${userLocation?.[0]},${userLocation?.[1]}&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`
-        );
-        const data = await response.json();
-        console.log("MAPBOX RESPONSE:", data);
+    const [userLongitude, userLatitude] = userLocation;
 
-        if (data.features && data.features.length > 0) {
-          const results = data.features.map((feature: any, index: number) => ({
-            id: `${feature.id}-${index}`,
-            coordinate: [feature.center[0], feature.center[1]],
-            placeName: feature.place_name,
-          }));
-          setSearchResults(results);
-
-          // center on first result
-          const [longitude, latitude] = results[0].coordinate;
-          cameraRef.current?.setCamera({
-            centerCoordinate: [longitude, latitude],
-            zoomLevel: 14,
-            animationDuration: 1000,
-          });
-        }
-      } catch (error) {
-        console.error("Search failed:", error);
-      }
-
+    // Check if the userLocation is valid
+    if (isNaN(userLongitude) || isNaN(userLatitude)) {
+      console.error("Invalid user location");
       setIsSearching(false);
-    };
+      return;
+    }
 
-    fetchMapboxSearch();
-  }, []);
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?proximity=${userLongitude},${userLatitude}&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`
+      );
+      const data = await response.json();
+      console.log("MAPBOX RESPONSE:", data);
+
+      if (data.features && data.features.length > 0) {
+        const results = data.features.map((feature: any, index: number) => ({
+          id: `${feature.id}-${index}`,
+          coordinate: [feature.center[0], feature.center[1]],
+          placeName: feature.place_name,
+        }));
+        setSearchResults(results);
+
+        // Center on the first result
+        const [longitude, latitude] = results[0].coordinate;
+        cameraRef.current?.setCamera({
+          centerCoordinate: [longitude, latitude],
+          zoomLevel: 14,
+          animationDuration: 1000,
+        });
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+    }
+
+    setIsSearching(false);
+  };
+
+  fetchMapboxSearch();
+}, [userLocation]);
 
   const handleSearchClear = useCallback(() => {
     setIsSearching(false);
@@ -138,51 +146,50 @@ export default function MapScreen() {
 
   setIsRouting(true);
 
-  try {
-    const userLongitude = parseFloat(userLocation[0].toString()); // Force parse as number
-    const userLatitude = parseFloat(userLocation[1].toString()); // Force parse as number
-    const destLongitude = parseFloat(destination[0].toString()); // Force parse as number
-    const destLatitude = parseFloat(destination[1].toString()); // Force parse as number
+try {
+  const userLongitude = userLocation[0];
+  const userLatitude = userLocation[1]; 
+  const destLongitude = destination[0];
+  const destLatitude = destination[1];
 
-    // Validate the parsed values
-    if (
-      isNaN(userLongitude) || 
-      isNaN(userLatitude) || 
-      isNaN(destLongitude) || 
-      isNaN(destLatitude)
-    ) {
-      throw new Error("Coordinates must be valid numbers");
-    }
-
-    if (
-      userLongitude < -180 || userLongitude > 180 || 
-      destLongitude < -180 || destLongitude > 180
-    ) {
-      throw new Error("Longitude must be between -180 and 180");
-    }
-
-    if (
-      userLatitude < -90 || userLatitude > 90 || 
-      destLatitude < -90 || destLatitude > 90
-    ) {
-      throw new Error("Latitude must be between -90 and 90");
-    }
-
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/` +
-      `${userLongitude},${userLatitude};${destLongitude},${destLatitude}` +
-      `?geometries=geojson&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.routes && data.routes.length > 0) {
-      setRouteGeometry(data.routes[0].geometry);
-    } else {
-      throw new Error("No route data found");
-    }
-  } catch (error) {
-    console.error("Route fetch failed:", error);
+  if (
+    isNaN(userLongitude) || 
+    isNaN(userLatitude) || 
+    isNaN(destLongitude) || 
+    isNaN(destLatitude)
+  ) {
+    throw new Error("Coordinates must be valid numbers");
   }
+
+  if (
+    userLongitude < -180 || userLongitude > 180 || 
+    destLongitude < -180 || destLongitude > 180
+  ) {
+    throw new Error("Longitude must be between -180 and 180");
+  }
+
+  if (
+    userLatitude < -90 || userLatitude > 90 || 
+    destLatitude < -90 || destLatitude > 90
+  ) {
+    throw new Error("Latitude must be between -90 and 90");
+  }
+
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+    `${userLongitude},${userLatitude};${destLongitude},${destLatitude}` +
+    `?geometries=geojson&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (data.routes && data.routes.length > 0) {
+    setRouteGeometry(data.routes[0].geometry);
+  } else {
+    throw new Error("No route data found");
+  }
+} catch (error) {
+  console.error("Route fetch failed:", error);
+}
 
   setIsRouting(false);
 };
