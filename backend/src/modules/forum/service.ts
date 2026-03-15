@@ -88,6 +88,28 @@ export abstract class UserService {
         return post;
   }
 
+  // Gets the forum post within a 15 mile radius of the user
+  static async getForumPost15mi(jti: string) {
+    
+    // Get user current locaiton
+    const [session] = await AuthService.getSessionWithLocation(jti);
+    if (!session) throw new Error("Invalid or expired session");
+
+    // get forum posts within 15 miles of the user
+    const posts = await db`
+        SELECT 
+          fp.*, 
+          ST_Distance_Sphere(fp.geo_point, ${session.geo_point}) * 0.000621371 AS distance_miles
+        FROM forum_post fp
+        WHERE fp.is_deleted = 0 
+        AND ST_Distance(fp.geo_point, ${session.geo_point}) <= 24140.2
+        ORDER BY fp.created_at DESC
+        `;
+        
+    return posts;
+
+  }
+
   // Catch all for comment search parameters
   // Need the postID or the userID
   static async getComment(id: number) {
