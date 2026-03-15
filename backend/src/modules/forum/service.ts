@@ -7,6 +7,9 @@ export abstract class UserService {
   // Store a new created forum post
   static async createPost({user_id, title, content, latitude, longitude, location_name, category}: ForumModel.createPost) {
     
+    // Add center point of where the post was made from
+
+
     // Insert the post into the database
     const [row] = await db` 
     INSERT INTO forum_post (user_id, title, content, latitude, longitude, location_name, category)
@@ -41,6 +44,12 @@ export abstract class UserService {
   // Catch all for forum post search parameters
   // Need the postID or the userID or the time and location
   static async getForumPost(id: number) {
+    
+    // Verify the user session token to see if they are logged in and can access the post
+
+    // Add a WHERE clause based on the radius from the geo_spat table for a user
+    // get users location and their radius and make a WHERE in range {center} <= {post} <= {outward radius} returns * posts from forum_post
+    
     const [post] = await db`
         SELECT *
         FROM forum_post
