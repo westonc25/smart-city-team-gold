@@ -35,6 +35,9 @@ export default function MapScreen() {
   const [searchResults, setSearchResults] = useState<
     { id: string; coordinate: [number, number]; placeName: string }[]
   >([]);
+  const [destination, setDestination] = useState<[number, number] | null>(null);
+  const [routeGeometry, setRouteGeometry] = useState<any | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
 
   const centerOnUser = useCallback(async () => {
     if (isLocating) return;
@@ -71,6 +74,12 @@ export default function MapScreen() {
   useEffect(() => {
     centerOnUser();
   }, []);
+
+  useEffect(() => {
+  if (!userLocation || !destination) return;
+
+  fetchRoute();
+}, [destination]);
 
   const handleMapReady = useCallback(() => {
     setIsMapReady(true);
@@ -120,7 +129,31 @@ export default function MapScreen() {
     setSearchResults([]);
   }, []);
 
-  const showLoading = !isMapReady || (isLocating && !userLocation);
+  const showLoading = !isMapReady || (isLocating && !userLocation) || isRouting;
+
+  const fetchRoute = async () => {
+  if (!userLocation || !destination) return;
+
+  setIsRouting(true);
+
+  try {
+    const url =
+      `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+      `${userLocation[0]},${userLocation[1]};${destination[0]},${destination[1]}` +
+      `?geometries=geojson&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.routes && data.routes.length > 0) {
+      setRouteGeometry(data.routes[0].geometry);
+    }
+  } catch (error) {
+    console.error("Route fetch failed:", error);
+  }
+
+  setIsRouting(false);
+};
 
   return (
     <ThemedView style={styles.container}>
@@ -140,12 +173,39 @@ export default function MapScreen() {
 
         {/* Your markers: search results */}
         {searchResults.map((result) => (
-          <Mapbox.PointAnnotation key={result.id} id={result.id} coordinate={result.coordinate}>
+          <Mapbox.PointAnnotation
+            key={result.id}
+            id={result.id}
+            coordinate={result.coordinate}
+            onSelected={() => setDestination(result.coordinate)}
+          >
             <View style={{ backgroundColor: 'blue', padding: 4, borderRadius: 4 }}>
               <Text style={{ color: 'white' }}>{result.placeName}</Text>
             </View>
           </Mapbox.PointAnnotation>
         ))}
+
+        {routeGeometry && (
+          <Mapbox.ShapeSource
+            id="routeSource"
+            shape={{
+              type: "Feature",
+              properties: {},
+              geometry: routeGeometry,
+            }}
+          >
+            <Mapbox.LineLayer
+              id="routeLine"
+              style={{
+                lineColor: "#3b9ddd",
+                lineWidth: 5,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
+          </Mapbox.ShapeSource>
+        )}
+
       </Mapbox.MapView>
 
       {/* Search bar */}
