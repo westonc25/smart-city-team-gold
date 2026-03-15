@@ -86,6 +86,7 @@ export default function MapScreen() {
   }, []);
 
   const handleSearch = useCallback((query: string) => {
+    console.log("SEARCH QUERY:", query);
     setIsSearching(true);
 
     
@@ -94,9 +95,10 @@ export default function MapScreen() {
 
       try {
         const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?proximity=${userLocation?.[0]},${userLocation?.[1]}&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`
         );
         const data = await response.json();
+        console.log("MAPBOX RESPONSE:", data);
 
         if (data.features && data.features.length > 0) {
           const results = data.features.map((feature: any, index: number) => ({
@@ -137,9 +139,37 @@ export default function MapScreen() {
   setIsRouting(true);
 
   try {
-    const url =
-      `https://api.mapbox.com/directions/v5/mapbox/driving/` +
-      `${userLocation[0]},${userLocation[1]};${destination[0]},${destination[1]}` +
+    const userLongitude = parseFloat(userLocation[0].toString()); // Force parse as number
+    const userLatitude = parseFloat(userLocation[1].toString()); // Force parse as number
+    const destLongitude = parseFloat(destination[0].toString()); // Force parse as number
+    const destLatitude = parseFloat(destination[1].toString()); // Force parse as number
+
+    // Validate the parsed values
+    if (
+      isNaN(userLongitude) || 
+      isNaN(userLatitude) || 
+      isNaN(destLongitude) || 
+      isNaN(destLatitude)
+    ) {
+      throw new Error("Coordinates must be valid numbers");
+    }
+
+    if (
+      userLongitude < -180 || userLongitude > 180 || 
+      destLongitude < -180 || destLongitude > 180
+    ) {
+      throw new Error("Longitude must be between -180 and 180");
+    }
+
+    if (
+      userLatitude < -90 || userLatitude > 90 || 
+      destLatitude < -90 || destLatitude > 90
+    ) {
+      throw new Error("Latitude must be between -90 and 90");
+    }
+
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+      `${userLongitude},${userLatitude};${destLongitude},${destLatitude}` +
       `?geometries=geojson&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
 
     const response = await fetch(url);
@@ -147,6 +177,8 @@ export default function MapScreen() {
 
     if (data.routes && data.routes.length > 0) {
       setRouteGeometry(data.routes[0].geometry);
+    } else {
+      throw new Error("No route data found");
     }
   } catch (error) {
     console.error("Route fetch failed:", error);
