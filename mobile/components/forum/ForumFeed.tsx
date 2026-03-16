@@ -11,18 +11,16 @@ import { FlatList, StyleSheet } from 'react-native';
 
 type ForumFeedProps = {
   posts: ForumPost[];
-  onAddComment: (postId: string, commentText: string) => void;
 };
 
-export function ForumFeed({ posts, onAddComment }: ForumFeedProps) {
+export function ForumFeed({ posts }: ForumFeedProps) {
   return (
     <FlatList
       data={posts}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        // Each post is rendered through ForumPostCard so comment UI
-        // and per post interactions stay in the card component
-        <ForumPostCard post={item} onAddComment={onAddComment} />
+        // Each post is rendered through ForumPostCard
+        <ForumPostCard post={item} />
       )}
       contentContainerStyle={styles.listContent}
       showsVerticalScrollIndicator={false}

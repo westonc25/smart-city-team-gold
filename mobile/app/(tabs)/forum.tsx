@@ -2,7 +2,7 @@
   Current implementation uses local mock data so the UI can be
   developed and tested before backend integration.
 
-  Backend team will replace mock/local create post and add comment flows
+  Backend team will replace mock/local create post flows
   with real API calls and forum data.
 */
 
@@ -16,7 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { forumMockPosts } from '@/data/forumMockData';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ForumComment, ForumPost } from '@/types/forum';
+import { ForumPost } from '@/types/forum';
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
@@ -67,35 +67,6 @@ export default function ForumScreen() {
     setPosts((prev) => [newPost, ...prev]);
   };
 
-  /*
-    CURRENT BEHAVIOR:
-    Creates a local comment object and appends it to the matching post
-
-    BACKEND INTEGRATION:
-    Replace with API call to create/store a comment for the given post id.
-    The backend should return the real comment id, author, and timestamp  
-    (or however yall set it up) )
-  */
-  const handleAddComment = (postId: string, commentText: string) => {
-    const newComment: ForumComment = {
-      id: Date.now().toString(),
-      author: 'Resident User',
-      content: commentText,
-      createdAt: 'Just now',
-    };
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [...(post.comments ?? []), newComment],
-            }
-          : post
-      )
-    );
-  };
-
   return (
     <ThemedView style={[styles.screen, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
@@ -137,7 +108,7 @@ export default function ForumScreen() {
           ForumFeed is separated from the screen so feed rendering is easier to 
           replace/update when we add the backend data 
         */
-        <ForumFeed posts={posts} onAddComment={handleAddComment} />
+        <ForumFeed posts={posts} />
       )}
 
       {/* Create post UI is in its own component for easier maintenance. */}
