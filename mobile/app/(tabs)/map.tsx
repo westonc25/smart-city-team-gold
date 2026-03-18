@@ -139,6 +139,13 @@ export default function MapScreen() {
     setSearchResults([]);
   }, []);
 
+  const clearRoute = useCallback(() => {
+    setDestination(null);
+    setRouteGeometry(null);
+    setSearchResults([]);
+    setIsSearching(false);
+  }, []);
+
   const showLoading = !isMapReady || (isLocating && !userLocation) || isRouting;
 
   const fetchRoute = async () => {
@@ -216,7 +223,11 @@ try {
             key={result.id}
             id={result.id}
             coordinate={result.coordinate}
-            onSelected={() => setDestination(result.coordinate)}
+            onSelected={() => {
+              setDestination(result.coordinate);
+              setSearchResults([]);
+              setIsSearching(false);
+            }}
           >
             <View style={{ backgroundColor: 'blue', padding: 4, borderRadius: 4 }}>
               <Text style={{ color: 'white' }}>{result.placeName}</Text>
@@ -261,6 +272,9 @@ try {
 
       {/* Controls */}
       <View style={styles.controls}>
+        {routeGeometry && (
+          <Button title="Clear Route" onPress={clearRoute} variant="secondary" />
+        )}
         <Button title="Recenter" onPress={centerOnUser} loading={isLocating} variant="primary" />
       </View>
 
