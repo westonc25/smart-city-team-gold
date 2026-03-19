@@ -94,7 +94,6 @@ export default function MapScreen() {
 
     const [userLongitude, userLatitude] = userLocation;
 
-    // Check if the userLocation is valid
     if (isNaN(userLongitude) || isNaN(userLatitude)) {
       console.error("Invalid user location");
       setIsSearching(false);
@@ -103,26 +102,26 @@ export default function MapScreen() {
 
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?proximity=${userLongitude},${userLatitude}&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`
+        `https://api.mapbox.com/search/searchbox/v1/forward?q=${encodeURIComponent(query)}` +
+        `&proximity=${userLongitude},${userLatitude}` +
+        `&limit=5` +
+        `&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`
       );
+
       const data = await response.json();
       console.log("MAPBOX RESPONSE:", data);
 
       if (data.features && data.features.length > 0) {
         const results = data.features.map((feature: any, index: number) => ({
           id: `${feature.id}-${index}`,
-          coordinate: [feature.center[0], feature.center[1]],
-          placeName: feature.place_name,
+          coordinate: feature.geometry.coordinates,
+          placeName: feature.properties.name + ", " + feature.properties.place_formatted,
         }));
-        setSearchResults(results);
 
-        // Center on the first result
-        const [longitude, latitude] = results[0].coordinate;
-        cameraRef.current?.setCamera({
-          centerCoordinate: [longitude, latitude],
-          zoomLevel: 14,
-          animationDuration: 1000,
-        });
+        setSearchResults(results);
+ 
+      } else {
+        setSearchResults([]);
       }
     } catch (error) {
       console.error("Search failed:", error);
@@ -182,9 +181,9 @@ try {
     throw new Error("Latitude must be between -90 and 90");
   }
 
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+ const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
     `${userLongitude},${userLatitude};${destLongitude},${destLatitude}` +
-    `?geometries=geojson&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
+    `?geometries=geojson&overview=full&steps=true&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
 
   const response = await fetch(url);
   const data = await response.json();
@@ -262,6 +261,36 @@ try {
       <View style={[styles.searchContainer, { top: insets.top + 12 }]}>
         <SearchBar onSearch={handleSearch} onClear={handleSearchClear} isSearching={isSearching} placeholder="Search places…" />
       </View>
+
+      {searchResults.length > 0 && (
+        <View style={{
+          position: 'absolute',
+          top: insets.top + 60,
+          left: 16,
+          right: 16,
+          backgroundColor: 'white',
+          borderRadius: 8,
+          zIndex: 10,
+          maxHeight: 200,
+        }}>
+          {searchResults.map((result) => (
+            <Text
+              key={result.id}
+              style={{ padding: 12, borderBottomWidth: 1 }}
+              onPress={() => {
+                console.log("SELECTED FROM LIST:", result.placeName);
+
+                setDestination(result.coordinate);
+
+                setSearchResults([]);
+                setIsSearching(false);
+              }}
+            >
+              {result.placeName}
+            </Text>
+          ))}
+        </View>
+      )}
 
       {/* Location error banner */}
       {locationError && (
