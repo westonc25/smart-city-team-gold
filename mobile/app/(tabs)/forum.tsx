@@ -20,8 +20,6 @@ import { ForumPost } from '@/types/forum';
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
-
-  // Theme aware colors so the forum screen matches the rest of the app
   const accentColor = useThemeColor(
     { light: '#0a7ea4', dark: '#4FC3F7' },
     'tint'
