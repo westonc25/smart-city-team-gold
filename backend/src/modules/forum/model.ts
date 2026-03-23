@@ -5,11 +5,9 @@ import { type UnwrapSchema } from 'elysia'
 
 export const ForumModel = {
     createPost: t.Object({
-        user_id: t.Number(),
+        jti: t.String(),
         title: t.String(),
         content: t.String(),
-        latitude: t.Optional(t.Number()),
-        longitude: t.Optional(t.Number()),
         location_name: t.Optional(t.String()),
         category: t.Optional(t.String()),
     }),
