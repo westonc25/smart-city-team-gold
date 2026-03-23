@@ -14,25 +14,37 @@ export abstract class UserService {
     const [session] = await AuthService.getSessionWithLocation(jti);
     if (!session) throw new Error("Invalid or expired session");
 
+    // Fetch author name from users via the session before inserting
+    const [user] = await db`
+      SELECT u.first_name, u.last_name
+      FROM users u
+      WHERE u.userID = ${session.user_id}
+      LIMIT 1
+    `;
+    if (!user) throw new Error("User not found");
+
     // Pass the lat and lon to the forum post table
     // Store the lat and lon in the form of a point
     // Add the post to the database with the new point variable
     await db`
-        INSERT INTO forum_post (user_session_id, title, content, location_name, category, geo_point)
-        VALUES (
-            ${session.sessions_id},
-            ${title},
-            ${content},
-            ${location_name},
-            ${category},
-            ${session.geo_point}
-        )
+        INSERT INTO forum_post (user_session_id, title, content, location_name, category, geo_point, first_name, last_name)
+      VALUES (
+        ${session.sessions_id},
+        ${title},
+        ${content},
+        ${location_name},
+        ${category},
+        ${session.geo_point},
+        ${user.first_name},
+        ${user.last_name}
+      )
     `;
 
 
    // Check that the post was created successfully
     const [row] = await db`
-        SELECT * FROM forum_post
+        SELECT * 
+        FROM forum_post
         WHERE user_session_id = ${session.sessions_id}
         ORDER BY created_at DESC
         LIMIT 1
@@ -46,7 +58,11 @@ export abstract class UserService {
   }
 
   // Store a new created comment on a forum post
-  static async createComment({ post_id, user_id, content }: ForumModel.createComment) {
+  static async createComment({ post_id, jti, content }: ForumModel.createComment) {
+
+    // Get session to verify the user
+    const [session] = await AuthService.getSessionWithLocation(jti);
+    if (!session) throw new Error("Invalid or expired session");
     
     // Retreive the post to ensure it exists
     const [post] = await db`
@@ -58,18 +74,44 @@ export abstract class UserService {
     // If the post doesn't exist, throw an error
     if (!post) throw status(404, "Post not found");
 
-    // Insert the comment into the database
-    const [comment] = await db`
-      INSERT INTO forum_comments (post_id, user_id, content, created_at, updated_at)
-      VALUES (${post_id}, ${user_id}, ${content}, NOW(), NOW())
-      RETURNING *
+    // Fetch author name from users via the session before inserting
+    const [user] = await db`
+      SELECT u.first_name, u.last_name
+      FROM users u
+      WHERE u.userID = ${session.user_id}
+      LIMIT 1
     `;
+    if (!user) throw new Error("User not found");
+
+    // Insert the comment into the database
+    await db`
+      INSERT INTO forum_comments (post_id, user_session_id, content, created_at, updated_at, first_name, last_name)
+      VALUES (
+        ${post_id}, 
+        ${session.sessions_id}, 
+        ${content}, 
+        NOW(), 
+        NOW(), 
+        ${user.first_name}, 
+        ${user.last_name})
+    `;
+
+    // Return the new comment row — name is already on it, no join needed
+    const [comment] = await db`
+      SELECT *
+      FROM forum_comments
+      WHERE user_session_id = ${session.sessions_id}
+        AND post_id         = ${post_id}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+ 
+    if (!comment) throw new Error("Comment creation failed");
 
     return comment;
   }
 
-  // Catch all for forum post search parameters
-  // Need the postID or the userID or the time and location
+  // Get a single forum post by post_ID
   static async getForumPost(id: number) {
     
     // Verify the user session token to see if they are logged in and can access the post

@@ -13,7 +13,7 @@ export const ForumModel = {
     }),
     createComment: t.Object({
         post_id: t.Number(),
-        user_id: t.Number(),
+        jti: t.String(),
         content: t.String(),
     })
 } as const
