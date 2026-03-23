@@ -4,7 +4,7 @@ import "./db";
 import { auth } from "./modules/auth";
 import { users } from "./modules/users";
 import { forum } from "./modules/forum";
-// import { map } from "./modules/map";
+import { map } from "./modules/map";
 // import { notifications } from "./modules/notifications";
 
 const app = new Elysia()
@@ -14,6 +14,7 @@ const app = new Elysia()
   .use(auth)
   .use(users)
   .use(forum)
+  .use(map)
 
   .listen(3000);
 

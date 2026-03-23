@@ -1,6 +1,7 @@
-import { View, TextInput, Button } from "react-native";
+import { View, TextInput, Button, Alert } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
+import { AuthService } from "@/services/auth";
 
 //I included this purely to make sure you couldn't just put in "potato" as an email
 const isStrictEmail = (email: string) => {
@@ -37,25 +38,33 @@ const isStrictEmail = (email: string) => {
   return true;
 };
 
-export default function Signup() 
+export default function Signup()
 {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
-  const handleSignup = () => 
+  const handleSignup = async () =>
+  {
+    if (!isStrictEmail(email))
     {
-    if (!isStrictEmail(email)) 
-    {
-      alert("Enter a valid email");
+      Alert.alert("Invalid email", "Enter a valid email address");
       return;
     }
 
-    //later on in coding, call backend database here
-    router.replace("/(tabs)/map");
+    try {
+      await AuthService.signup(email, password, firstName, lastName);
+      router.replace("/login");
+    } catch (e: any) {
+      Alert.alert("Signup failed", e.message);
+    }
   };
 
   return (
     <View style={{ padding: 20 }}>
+      <TextInput placeholder="First name" onChangeText={setFirstName} />
+      <TextInput placeholder="Last name" onChangeText={setLastName} />
       <TextInput placeholder="Email" onChangeText={setEmail} />
       <TextInput placeholder="Password" secureTextEntry onChangeText={setPassword} />
       <Button title="Create Account" onPress={handleSignup} />

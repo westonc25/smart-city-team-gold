@@ -1,2 +1,0 @@
-Helper functions
-    hash passwords, validate emails, format dates

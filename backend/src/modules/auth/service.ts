@@ -61,12 +61,16 @@ export abstract class AuthService {
         const hashedPassword = await Bun.password.hash(password);
 
         // If not, insert new user into database
-        await db`
-        INSERT INTO users (email, password_hash, first_name, last_name, created_at, updated_at, is_active, auth_provider)
-        VALUES (${email}, ${hashedPassword}, ${first_name}, ${last_name}, NOW(), NOW(), 1, 'local')
-        `;
+        try {
+            await db`
+            INSERT INTO users (email, password_hash, first_name, last_name, created_at, updated_at, is_active, auth_provider)
+            VALUES (${email}, ${hashedPassword}, ${first_name}, ${last_name}, NOW(), NOW(), 1, 'local')
+            `;
+        } catch {
+            throw status(500, 'Signup failed. Please try again.');
+        }
 
-    return { success: true };
+        return { success: true };
     
     }
 }
