@@ -1,8 +1,8 @@
 /*
-  Current implementation uses local mock data so the UI can be
+  Current implementation uses shared forum context so the UI can be
   developed and tested before backend integration.
 
-  Backend team will replace mock/local create post flows
+  Backend team can later replace context-backed create post flows
   with real API calls and forum data.
 */
 
@@ -14,12 +14,14 @@ import { CreatePostModal } from '@/components/forum/CreatePostModal';
 import { ForumFeed } from '@/components/forum/ForumFeed';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { forumMockPosts } from '@/data/forumMockData';
+import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumPost } from '@/types/forum';
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
+  const { posts, addPost } = useForum();
+
   const accentColor = useThemeColor(
     { light: '#0a7ea4', dark: '#4FC3F7' },
     'tint'
@@ -33,16 +35,6 @@ export default function ForumScreen() {
     'text'
   );
 
-  /*
-    TEMPORARY FRONTEND STATE:
-    Posts currently come from local mock data so the forum UI can be tested
-    before backend forum endpoints are connected 
-
-    BACKEND INTEGRATION:
-    Replace the mock data source with posts fetched from the backend.
-  */
-  const [posts, setPosts] = useState<ForumPost[]>(forumMockPosts);
-
   // Controls the visibility of the create post bottom sheet.
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -55,14 +47,15 @@ export default function ForumScreen() {
 
   /*
     CURRENT BEHAVIOR:
-    Adds a newly created post to local state so it appears at the top of the feed.
+    Adds a newly created post to shared forum state so it appears at the top
+    of the feed and is visible across forum screens.
 
     BACKEND INTEGRATION:
-    This should eventually call a POST endpoint and use the saved post
+    This can later call a POST endpoint and store the saved post
     returned by the backend.
   */
   const handleAddPost = (newPost: ForumPost) => {
-    setPosts((prev) => [newPost, ...prev]);
+    addPost(newPost);
   };
 
   return (
@@ -102,14 +95,9 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        /*
-          ForumFeed is separated from the screen so feed rendering is easier to 
-          replace/update when we add the backend data 
-        */
         <ForumFeed posts={posts} />
       )}
 
-      {/* Create post UI is in its own component for easier maintenance. */}
       <CreatePostModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
