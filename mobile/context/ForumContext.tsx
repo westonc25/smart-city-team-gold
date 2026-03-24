@@ -1,60 +1,42 @@
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { ForumPost, ForumComment } from '@/types/forum';
 import { forumMockPosts } from '@/data/forumMockData';
-import { ForumComment, ForumPost } from '@/types/forum';
-import React, { createContext, useContext, useMemo, useState } from 'react';
 
 type ForumContextType = {
   posts: ForumPost[];
-  addComment: (postId: string, commentText: string) => void;
-  addPost: (newPost: ForumPost) => void;
+  addPost: (post: ForumPost) => void;
+  addComment: (postId: string, comment: ForumComment) => void;
 };
 
 const ForumContext = createContext<ForumContextType | undefined>(undefined);
 
-export function ForumProvider({ children }: { children: React.ReactNode }) {
+export function ForumProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<ForumPost[]>(forumMockPosts);
 
-  const addComment = (postId: string, commentText: string) => {
-    const trimmed = commentText.trim();
-    if (!trimmed) return;
+  const addPost = (post: ForumPost) => {
+    setPosts((prev) => [post, ...prev]);
+  };
 
-    const newComment: ForumComment = {
-      id: Date.now().toString(),
-      author: 'Resident User',
-      content: trimmed,
-      createdAt: 'Just now',
-    };
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
+  const addComment = (postId: string, comment: ForumComment) => {
+    setPosts((prev) =>
+      prev.map((post) =>
         post.id === postId
-          ? {
-              ...post,
-              comments: [...(post.comments ?? []), newComment],
-            }
+          ? { ...post, comments: [...(post.comments || []), comment] }
           : post
       )
     );
   };
 
-  const addPost = (newPost: ForumPost) => {
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
-  };
-
-  const value = useMemo(
-    () => ({
-      posts,
-      addComment,
-      addPost,
-    }),
-    [posts]
+  return (
+    <ForumContext.Provider value={{ posts, addPost, addComment }}>
+      {children}
+    </ForumContext.Provider>
   );
-
-  return <ForumContext.Provider value={value}>{children}</ForumContext.Provider>;
 }
 
 export function useForum() {
   const context = useContext(ForumContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useForum must be used within a ForumProvider');
   }
   return context;
