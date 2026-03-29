@@ -6,7 +6,7 @@
   with real API calls and forum data.
 */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +21,7 @@ import { ForumPost } from '@/types/forum';
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
   const { posts, addPost } = useForum();
+  const [fetchedPosts, setFetchedPosts] = useState<ForumPost[] | null>(null);
 
   const accentColor = useThemeColor(
     { light: '#0a7ea4', dark: '#4FC3F7' },
@@ -38,12 +39,40 @@ export default function ForumScreen() {
   // Controls the visibility of the create post bottom sheet.
   const [modalVisible, setModalVisible] = useState(false);
 
+  const displayPosts = fetchedPosts ?? posts;
+
   // Label shown under the page title.
   const postCountText = useMemo(() => {
-    if (posts.length === 0) return 'No posts yet';
-    if (posts.length === 1) return '1 post';
-    return `${posts.length} posts`;
-  }, [posts.length]);
+    if (displayPosts.length === 0) return 'No posts yet';
+    if (displayPosts.length === 1) return '1 post';
+    return `${displayPosts.length} posts`;
+  }, [displayPosts.length]);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch("http://10.0.2.2:3000/forum/posts");
+        const data = await response.json();
+
+        console.log("FORUM DATA:", data);
+
+        //currently from backend a placeholder is sent
+        if (Array.isArray(data)) 
+        {
+          setFetchedPosts(data);
+        } 
+        else 
+        {
+          setFetchedPosts([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+        setFetchedPosts([]);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   /*
     CURRENT BEHAVIOR:
@@ -75,7 +104,7 @@ export default function ForumScreen() {
         </Pressable>
       </View>
 
-      {posts.length === 0 ? (
+      {displayPosts.length === 0 ? (
         <View style={styles.emptyState}>
           <ThemedText style={styles.emptyIcon}>💬</ThemedText>
           <ThemedText type="subtitle">No posts yet</ThemedText>
@@ -95,7 +124,7 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        <ForumFeed posts={posts} />
+        <ForumFeed posts={displayPosts} />
       )}
 
       <CreatePostModal
