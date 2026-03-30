@@ -1,32 +1,28 @@
 import { Elysia } from 'elysia'
-
 import { ForumModel } from './model'
-// Import services once implemented
+import { ForumService } from './service'
 
 export const forum = new Elysia({ prefix: '/forum' })
 
-    // Gets all the posts from the forum
-
+    // Gets all the posts from the forum (Requires JTI for location)
+    // You can hook this up to a specific route later once auth is fully integrated
     .get("/posts", () => 'Route Accessed, All Posts Pulled')
 
     // Given an ID, gets a specific post
-
-    .get("/posts/:id", () => 'Route Accessed, Post Pulled')
+    .get("/posts/:id", ({ params: { id } }) => ForumService.getForumPost(Number(id)))
 
     // Create a post
-
-    .post("/posts", () => 'Route Accessed, Post Created', { body: ForumModel.createPost })
+    .post("/posts", ({ body }) => ForumService.createPost(body), { 
+        body: ForumModel.createPost 
+    })
 
      // Given an ID, delete a post from the forum
+    .delete("/posts/:id", ({ params: { id } }) => ForumService.deletePost(Number(id)))
 
-    .delete("/posts/:id", () => 'Route Accessed, Post Deleted')
-
-    // Given an ID, get a comment
-
-    .get("/posts/:id/comments", () => 'Route Accessed, Comment Pulled')
+    // Given a comment ID, get a comment
+    .get("/comments/:id", ({ params: { id } }) => ForumService.getComment(Number(id)))
 
     // Given a post ID, create a comment
-
-    .post("/posts/:id/comments",
-         () => 'Route Accessed, Comment Created',
-          { body: ForumModel.createComment })
+    .post("/posts/:id/comments", ({ body }) => ForumService.createComment(body), { 
+        body: ForumModel.createComment 
+    })

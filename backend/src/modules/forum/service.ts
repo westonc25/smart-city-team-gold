@@ -4,7 +4,7 @@ import { db } from "../../db";
 import { ForumModel } from "./model";
 import { AuthService} from "../auth/service";
 
-export abstract class UserService {
+export abstract class ForumService {
   // Store a new created forum post
   static async createPost({jti, title, content ,location_name, category}: ForumModel.createPost) {
     
