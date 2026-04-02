@@ -13,7 +13,7 @@
 | Backend in this repo | **`backend/src/index.ts` is still a minimal Elysia “Hello” app** — no `/forum` routes in the tree that `main` tracks. |
 | Fuller backend + forum DB layer | **Exists on another branch** — e.g. `Nick`: *“Integrate forum API routes with database service”* touches `backend/src/modules/forum/` on **`origin/Westons-Backend-Workflow-Setup`** (not merged into `main` here). |
 
-**Conclusion:** The assignment to **begin merging backend and frontend** is **not fully done** on `main`. There is an initial **GET posts** hook in the app, but there is **no end-to-end prototype** on this branch: no forum API in the checked-in backend, brittle base URL, and **post detail / create / comments** are not backed by the same source as the feed.
+**Conclusion:** The task of the **begin merging backend and frontend** is **not fully done** on `main`. There is an initial **GET posts** hook in the app, but there is **no end-to-end prototype** on this branch: no forum API in the checked-in backend, brittle base URL, and **post detail / create / comments** are not backed by the same source as the feed.
 
 ---
 
@@ -33,7 +33,7 @@ Work in thin vertical slices so each step is demoable. Align with **Carlos / Wes
 
 ### Phase A — Make `main` runnable end-to-end
 
-1. **Merge or cherry-pick** the real Elysia app + forum module from **`Westons-Backend-Workflow-Setup`** (or whichever branch your team agreed is canonical), so `GET /forum/posts` (and related routes) actually exist when you run `backend` on port 3000.
+1. **Merge or cherry-pick** the real Elysia app + forum module from **`Westons-Backend-Workflow-Setup`** (or whichever branch the team agreed is canonical), so `GET /forum/posts` (and related routes) actually exist when you run `backend` on port 3000.
 2. Add **`EXPO_PUBLIC_API_URL`** (or team convention) and replace the hard-coded `10.0.2.2` string in `forum.tsx` (and future calls). Document the value per platform (Android emulator vs iOS vs device).
 
 ### Phase B — One data path for the forum UI
@@ -50,18 +50,18 @@ Work in thin vertical slices so each step is demoable. Align with **Carlos / Wes
 ### Phase D — Hardening
 
 8. **Errors & auth:** Handle 401/403 if posts require session; attach **Authorization** header from wherever login stores the token (Carlos’s wiring).
-9. **Loading / empty:** You already have patterns from earlier map/forum UX work — extend to API errors and retries.
+9. **Loading / empty:** I already have patterns from earlier map/forum UX work — extend to API errors and retries.
 
 ---
 
-## 4. Coordination (from your Discord context)
+## 4. Coordination
 
 - **Úlfr:** Forum-focused merge work — confirm what was merged to `main` vs what still lives on a feature branch.
 - **Carlos:** Backend forum + map connection — get **exact paths**, **payloads**, and whether **demo seed data** in the DB matches the prototype location Weston mentioned.
 
 ---
 
-## 5. Quick “done?” checklist for your task
+## 5. Quick “done?” checklist for my tasks. if anyone wants to do these, please go ahead. pin the team or me so we know what were working on.
 
 - [ ] Backend on `main` serves forum routes the app calls.
 - [ ] One configuration for API base URL works for your target dev device.
