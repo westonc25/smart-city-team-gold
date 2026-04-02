@@ -30,7 +30,7 @@ export default function MapScreen() {
     { id: "post-2", coordinate: [-73.935242, 40.73061], title: "Meetup discussion" },
     { id: "post-3", coordinate: [-118.2437, 34.0522], title: "Art gallery thread" }
   ];
-  const [forumPostsState, setForumPostsState] = useState(sampleForumPosts);
+  const forumPostsState = sampleForumPosts;
 
   const [searchResults, setSearchResults] = useState<
     { id: string; coordinate: [number, number]; placeName: string }[]
@@ -64,7 +64,7 @@ export default function MapScreen() {
           animationDuration: 1000,
         });
       }
-    } catch (err) {
+    } catch {
       setLocationError('Unable to get your location. Please try again.');
     }
 
@@ -72,14 +72,10 @@ export default function MapScreen() {
   }, [isLocating]);
 
   useEffect(() => {
-    centerOnUser();
+    void centerOnUser();
+    // Run once on mount; centerOnUser changes when isLocating toggles and must not retrigger here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-  if (!userLocation || !destination) return;
-
-  fetchRoute();
-}, [destination]);
 
   const handleMapReady = useCallback(() => {
     setIsMapReady(true);
@@ -147,58 +143,64 @@ export default function MapScreen() {
 
   const showLoading = !isMapReady || (isLocating && !userLocation) || isRouting;
 
-  const fetchRoute = async () => {
-  if (!userLocation || !destination) return;
+  const fetchRoute = useCallback(async () => {
+    if (!userLocation || !destination) return;
 
-  setIsRouting(true);
+    setIsRouting(true);
 
-try {
-  const userLongitude = userLocation[0];
-  const userLatitude = userLocation[1]; 
-  const destLongitude = destination[0];
-  const destLatitude = destination[1];
+    try {
+      const userLongitude = userLocation[0];
+      const userLatitude = userLocation[1];
+      const destLongitude = destination[0];
+      const destLatitude = destination[1];
 
-  if (
-    isNaN(userLongitude) || 
-    isNaN(userLatitude) || 
-    isNaN(destLongitude) || 
-    isNaN(destLatitude)
-  ) {
-    throw new Error("Coordinates must be valid numbers");
-  }
+      if (
+        isNaN(userLongitude) ||
+        isNaN(userLatitude) ||
+        isNaN(destLongitude) ||
+        isNaN(destLatitude)
+      ) {
+        throw new Error('Coordinates must be valid numbers');
+      }
 
-  if (
-    userLongitude < -180 || userLongitude > 180 || 
-    destLongitude < -180 || destLongitude > 180
-  ) {
-    throw new Error("Longitude must be between -180 and 180");
-  }
+      if (
+        userLongitude < -180 || userLongitude > 180 ||
+        destLongitude < -180 || destLongitude > 180
+      ) {
+        throw new Error('Longitude must be between -180 and 180');
+      }
 
-  if (
-    userLatitude < -90 || userLatitude > 90 || 
-    destLatitude < -90 || destLatitude > 90
-  ) {
-    throw new Error("Latitude must be between -90 and 90");
-  }
+      if (
+        userLatitude < -90 || userLatitude > 90 ||
+        destLatitude < -90 || destLatitude > 90
+      ) {
+        throw new Error('Latitude must be between -90 and 90');
+      }
 
- const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
-    `${userLongitude},${userLatitude};${destLongitude},${destLatitude}` +
-    `?geometries=geojson&overview=full&steps=true&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
+      const url =
+        `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
+        `${userLongitude},${userLatitude};${destLongitude},${destLatitude}` +
+        `?geometries=geojson&overview=full&steps=true&access_token=${process.env.EXPO_PUBLIC_MAPBOX_TOKEN}`;
 
-  const response = await fetch(url);
-  const data = await response.json();
+      const response = await fetch(url);
+      const data = await response.json();
 
-  if (data.routes && data.routes.length > 0) {
-    setRouteGeometry(data.routes[0].geometry);
-  } else {
-    throw new Error("No route data found");
-  }
-} catch (error) {
-  console.error("Route fetch failed:", error);
-}
+      if (data.routes && data.routes.length > 0) {
+        setRouteGeometry(data.routes[0].geometry);
+      } else {
+        throw new Error('No route data found');
+      }
+    } catch (error) {
+      console.error('Route fetch failed:', error);
+    }
 
-  setIsRouting(false);
-};
+    setIsRouting(false);
+  }, [userLocation, destination]);
+
+  useEffect(() => {
+    if (!userLocation || !destination) return;
+    void fetchRoute();
+  }, [userLocation, destination, fetchRoute]);
 
   return (
     <ThemedView style={styles.container}>

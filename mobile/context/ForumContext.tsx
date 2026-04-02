@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  ReactNode,
+} from 'react';
 import { ForumPost, ForumComment } from '@/types/forum';
 import { forumMockPosts } from '@/data/forumMockData';
 
@@ -6,6 +12,8 @@ type ForumContextType = {
   posts: ForumPost[];
   addPost: (post: ForumPost) => void;
   addComment: (postId: string, comment: ForumComment) => void;
+  /** Replaces the in-memory list (e.g. after GET /forum/posts) so feed and post detail stay in sync. */
+  replacePosts: (posts: ForumPost[]) => void;
 };
 
 const ForumContext = createContext<ForumContextType | undefined>(undefined);
@@ -27,8 +35,12 @@ export function ForumProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const replacePosts = useCallback((next: ForumPost[]) => {
+    setPosts(next);
+  }, []);
+
   return (
-    <ForumContext.Provider value={{ posts, addPost, addComment }}>
+    <ForumContext.Provider value={{ posts, addPost, addComment, replacePosts }}>
       {children}
     </ForumContext.Provider>
   );

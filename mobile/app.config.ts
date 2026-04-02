@@ -72,6 +72,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     ...config.extra,
     MAPBOX_TOKEN: process.env.EXPO_PUBLIC_MAPBOX_TOKEN,
+    /** Optional; when unset, mobile/lib/api-config uses platform defaults. */
+    API_URL: process.env.EXPO_PUBLIC_API_URL,
     eas: {
       projectId: '06985c3b-9457-4b98-a6e2-81a29f5296e1',
     },

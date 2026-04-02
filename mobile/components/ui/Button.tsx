@@ -20,7 +20,6 @@ export function Button({
     style,
     textStyle
 }: ButtonProps) {
-    const backgroundColor = useThemeColor({ light: variant === 'outline' ? 'transparent' : '#0a7ea4', dark: variant === 'outline' ? 'transparent' : '#fff' }, 'background');
     const textColor = useThemeColor({ light: variant === 'outline' ? '#0a7ea4' : '#fff', dark: variant === 'outline' ? '#fff' : '#000' }, 'text');
 
     const buttonStyles = [

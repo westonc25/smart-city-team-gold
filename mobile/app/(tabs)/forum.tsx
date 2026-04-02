@@ -1,9 +1,7 @@
 /*
-  Current implementation uses shared forum context so the UI can be
-  developed and tested before backend integration.
-
-  Backend team can later replace context-backed create post flows
-  with real API calls and forum data.
+  Loads posts from GET {API}/forum/posts (see lib/api-config: EXPO_PUBLIC_API_URL
+  or platform defaults). Normalizes the payload into ForumContext so the feed
+  and /post/[id] share the same data. Create-post remains client-side until POST exists.
 */
 
 import { useMemo, useState, useEffect } from 'react';
@@ -16,12 +14,26 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getForumPostsUrl } from '@/lib/api-config';
+import { normalizeForumPostList } from '@/lib/normalize-forum';
 import { ForumPost } from '@/types/forum';
+
+const extractPostArray = (data: unknown): unknown[] => {
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'object' && data !== null && 'data' in data) {
+    const inner = (data as { data: unknown }).data;
+    if (Array.isArray(inner)) return inner;
+  }
+  if (typeof data === 'object' && data !== null && 'posts' in data) {
+    const inner = (data as { posts: unknown }).posts;
+    if (Array.isArray(inner)) return inner;
+  }
+  return [];
+};
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
-  const { posts, addPost } = useForum();
-  const [fetchedPosts, setFetchedPosts] = useState<ForumPost[] | null>(null);
+  const { posts, addPost, replacePosts } = useForum();
 
   const accentColor = useThemeColor(
     { light: '#0a7ea4', dark: '#4FC3F7' },
@@ -39,40 +51,39 @@ export default function ForumScreen() {
   // Controls the visibility of the create post bottom sheet.
   const [modalVisible, setModalVisible] = useState(false);
 
-  const displayPosts = fetchedPosts ?? posts;
-
   // Label shown under the page title.
   const postCountText = useMemo(() => {
-    if (displayPosts.length === 0) return 'No posts yet';
-    if (displayPosts.length === 1) return '1 post';
-    return `${displayPosts.length} posts`;
-  }, [displayPosts.length]);
+    if (posts.length === 0) return 'No posts yet';
+    if (posts.length === 1) return '1 post';
+    return `${posts.length} posts`;
+  }, [posts.length]);
 
   useEffect(() => {
     const fetchPosts = async () => {
+      const url = getForumPostsUrl();
       try {
-        const response = await fetch("http://10.0.2.2:3000/forum/posts");
-        const data = await response.json();
-
-        console.log("FORUM DATA:", data);
-
-        //currently from backend a placeholder is sent
-        if (Array.isArray(data)) 
-        {
-          setFetchedPosts(data);
-        } 
-        else 
-        {
-          setFetchedPosts([]);
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn('Forum posts request failed:', response.status, url);
+          replacePosts([]);
+          return;
         }
+
+        const data: unknown = await response.json();
+
+        console.log('FORUM DATA:', data);
+
+        const rawList = extractPostArray(data);
+        const normalized = normalizeForumPostList(rawList);
+        replacePosts(normalized);
       } catch (error) {
-        console.error("Failed to fetch posts:", error);
-        setFetchedPosts([]);
+        console.error('Failed to fetch posts:', error);
+        replacePosts([]);
       }
     };
 
     fetchPosts();
-  }, []);
+  }, [replacePosts]);
 
   /*
     CURRENT BEHAVIOR:
@@ -104,7 +115,7 @@ export default function ForumScreen() {
         </Pressable>
       </View>
 
-      {displayPosts.length === 0 ? (
+      {posts.length === 0 ? (
         <View style={styles.emptyState}>
           <ThemedText style={styles.emptyIcon}>💬</ThemedText>
           <ThemedText type="subtitle">No posts yet</ThemedText>
@@ -124,7 +135,7 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        <ForumFeed posts={displayPosts} />
+        <ForumFeed posts={posts} />
       )}
 
       <CreatePostModal
