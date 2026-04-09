@@ -3,7 +3,7 @@
 
   Current implementation builds a frontend only ForumPost object and passes it
   up to the parent screen. Backend integration will replace that flow with
-  a real create post API request 
+  a real create post API request
 */
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,6 +17,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -112,96 +113,107 @@ export function CreatePostModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      {/* Helps prevent the keyboard from covering the input fields. */}
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ThemedView style={[styles.modalCard, { backgroundColor: modalBg }]}>
-          <ThemedText type="subtitle">Create Post</ThemedText>
-          <ThemedText style={[styles.helperText, { color: mutedTextColor }]}>
-            Share an update, event, question, or safety concern with the
-            community.
-          </ThemedText>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <ThemedView style={[styles.modalCard, { backgroundColor: modalBg }]}>
+            <ThemedText type="subtitle">Create Post</ThemedText>
+            <ThemedText style={[styles.helperText, { color: mutedTextColor }]}>
+              Share an update, event, question, or safety concern with the
+              community.
+            </ThemedText>
 
-          <ThemedText style={styles.label}>Category</ThemedText>
-          <View style={styles.categoryRow}>
-            {categories.map((item) => {
-              const isSelected = category === item;
+            <ThemedText style={styles.label}>Category</ThemedText>
+            <View style={styles.categoryRow}>
+              {categories.map((item) => {
+                const isSelected = category === item;
 
-              return (
-                <Pressable
-                  key={item}
-                  style={[
-                    styles.categoryOption,
-                    {
-                      borderColor: isSelected ? accentColor : borderColor,
-                      backgroundColor: isSelected ? accentColor : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setCategory(item)}>
-                  <ThemedText
+                return (
+                  <Pressable
+                    key={item}
                     style={[
-                      styles.categoryOptionText,
-                      isSelected && styles.categoryOptionTextSelected,
-                    ]}>
-                    {item}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
-          </View>
+                      styles.categoryOption,
+                      {
+                        borderColor: isSelected ? accentColor : borderColor,
+                        backgroundColor: isSelected ? accentColor : 'transparent',
+                      },
+                    ]}
+                    onPress={() => setCategory(item)}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.categoryOptionText,
+                        isSelected && styles.categoryOptionTextSelected,
+                      ]}
+                    >
+                      {item}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-          <ThemedText style={styles.label}>Title</ThemedText>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter post title"
-            placeholderTextColor={mutedTextColor}
-            style={[
-              styles.input,
-              {
-                borderColor,
-                backgroundColor: mutedBg,
-                color: Platform.OS === 'android' ? '#000000' : undefined,
-              },
-            ]}
-            maxLength={80}
-          />
+            <ThemedText style={styles.label}>Title</ThemedText>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Enter post title"
+              placeholderTextColor={mutedTextColor}
+              style={[
+                styles.input,
+                {
+                  borderColor,
+                  backgroundColor: mutedBg,
+                  color: Platform.OS === 'android' ? '#000000' : undefined,
+                },
+              ]}
+              maxLength={80}
+            />
 
-          <ThemedText style={styles.label}>Post</ThemedText>
-          <TextInput
-            value={content}
-            onChangeText={setContent}
-            placeholder="What would you like to share?"
-            placeholderTextColor={mutedTextColor}
-            style={[
-              styles.input,
-              styles.textArea,
-              {
-                borderColor,
-                backgroundColor: mutedBg,
-                color: Platform.OS === 'android' ? '#000000' : undefined,
-              },
-            ]}
-            multiline
-            textAlignVertical="top"
-            maxLength={300}
-          />
+            <ThemedText style={styles.label}>Post</ThemedText>
+            <TextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="What would you like to share?"
+              placeholderTextColor={mutedTextColor}
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  borderColor,
+                  backgroundColor: mutedBg,
+                  color: Platform.OS === 'android' ? '#000000' : undefined,
+                },
+              ]}
+              multiline
+              textAlignVertical="top"
+              maxLength={300}
+            />
 
-          <View style={styles.actions}>
-            <Pressable
-              style={[styles.actionButton, styles.cancelButton, { borderColor }]}
-              onPress={handleClose}>
-              <ThemedText style={styles.cancelText}>Cancel</ThemedText>
-            </Pressable>
+            <View style={styles.actions}>
+              <Pressable
+                style={[styles.actionButton, styles.cancelButton, { borderColor }]}
+                onPress={handleClose}
+              >
+                <ThemedText style={styles.cancelText}>Cancel</ThemedText>
+              </Pressable>
 
-            <Pressable
-              style={[styles.actionButton, { backgroundColor: accentColor }]}
-              onPress={handleSubmit}>
-              <ThemedText style={styles.submitText}>Post</ThemedText>
-            </Pressable>
-          </View>
-        </ThemedView>
+              <Pressable
+                style={[styles.actionButton, { backgroundColor: accentColor }]}
+                onPress={handleSubmit}
+              >
+                <ThemedText style={styles.submitText}>Post</ThemedText>
+              </Pressable>
+            </View>
+          </ThemedView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -210,8 +222,11 @@ export function CreatePostModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   modalCard: {
     borderTopLeftRadius: 20,

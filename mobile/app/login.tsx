@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -22,7 +23,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Replace this with real authentication logic 
+  // Replace this with real authentication logic
   // On success, navigate to main app
   // On failure, show error message
   const handleLogin = () => {
@@ -37,80 +38,90 @@ export default function Login() {
   return (
     <ThemedView style={styles.screen}>
       <KeyboardAvoidingView
-        style={[
-          styles.container,
-          {
-            paddingTop: insets.top + 24,
-            paddingBottom: Math.max(insets.bottom + 24, 24),
-          },
-        ]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.screen}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        {/* Header / Branding Section */}
-        <View style={styles.header}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: insets.top + 24,
+              paddingBottom: Math.max(insets.bottom + 24, 24),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header / Branding Section */}
+          <View style={styles.header}>
             <View style={styles.iconCircle}>
               <Image
-                  source={require('@/assets/images/logo.png')}
-                  style={styles.logo}
-                  resizeMode="cover"
-                />
-          </View>
+                source={require('@/assets/images/logo.png')}
+                style={styles.logo}
+                resizeMode="cover"
+              />
+            </View>
 
-          <ThemedText type="title" style={styles.title}>
-            SmartCity
-          </ThemedText>
-
-          <ThemedText style={styles.subtitle}>
-            Stay connected with your city, community, and local updates.
-          </ThemedText>
-        </View>
-
-        {/* Login Form Card */}
-        <View style={styles.card}>
-          <ThemedText style={styles.sectionTitle}>Welcome Back</ThemedText>
-
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Email</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#8E8E93"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Password</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              placeholderTextColor="#8E8E93"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Login Button */}
-          <Pressable style={styles.primaryButton} onPress={handleLogin}>
-            <ThemedText style={styles.primaryButtonText}>Login</ThemedText>
-          </Pressable>
-
-          {/* Create Account Button */}
-          <Pressable style={styles.secondaryButton} onPress={handleCreateAccount}>
-            <ThemedText style={styles.secondaryButtonText}>
-              Create account
+            <ThemedText type="title" style={styles.title}>
+              SmartCity
             </ThemedText>
-          </Pressable>
-        </View>
+
+            <ThemedText style={styles.subtitle}>
+              Stay connected with your city, community, and local updates.
+            </ThemedText>
+          </View>
+
+          {/* Login Form Card */}
+          <View style={styles.card}>
+            <ThemedText style={styles.sectionTitle}>Welcome Back</ThemedText>
+
+            {/* Email Input */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Email</ThemedText>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#8E8E93"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Password</ThemedText>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor="#8E8E93"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Login Button */}
+            <Pressable style={styles.primaryButton} onPress={handleLogin}>
+              <ThemedText style={styles.primaryButtonText}>Login</ThemedText>
+            </Pressable>
+
+            {/* Create Account Button */}
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={handleCreateAccount}
+            >
+              <ThemedText style={styles.secondaryButtonText}>
+                Create account
+              </ThemedText>
+            </Pressable>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
   );
@@ -120,8 +131,8 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  container: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 20,
     justifyContent: 'center',
     gap: 24,
