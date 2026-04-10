@@ -38,6 +38,7 @@ export default function MapScreen() {
   const [destination, setDestination] = useState<[number, number] | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<any | null>(null);
   const [isRouting, setIsRouting] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
 
   const centerOnUser = useCallback(async () => {
     if (isLocating) return;
@@ -137,11 +138,18 @@ export default function MapScreen() {
   const clearRoute = useCallback(() => {
     setDestination(null);
     setRouteGeometry(null);
+    setRouteInfo(null);
     setSearchResults([]);
     setIsSearching(false);
   }, []);
 
   const showLoading = !isMapReady || (isLocating && !userLocation) || isRouting;
+
+  const formatDistance = (meters: number) =>
+  (meters / 1609.34).toFixed(1) + " mi";
+
+  const formatDuration = (seconds: number) =>
+    Math.round(seconds / 60) + " min";
 
   const fetchRoute = useCallback(async () => {
     if (!userLocation || !destination) return;
@@ -185,9 +193,21 @@ export default function MapScreen() {
       const response = await fetch(url);
       const data = await response.json();
 
-      if (data.routes && data.routes.length > 0) {
-        setRouteGeometry(data.routes[0].geometry);
-      } else {
+      if (data.routes && data.routes.length > 0) 
+      {
+        const route = data.routes[0];
+
+        setRouteGeometry(route.geometry);
+
+        setRouteInfo({
+          distance: route.distance,
+          duration: route.duration,
+        });
+      } 
+      else 
+      {
+        setRouteGeometry(null);
+        setRouteInfo(null);
         throw new Error('No route data found');
       }
     } catch (error) {
@@ -301,6 +321,14 @@ export default function MapScreen() {
         </View>
       )}
 
+      {routeInfo && (
+        <View style={styles.routeInfoBox}>
+          <Text style={styles.routeText}>
+            {formatDuration(routeInfo.duration)} • {formatDistance(routeInfo.distance)}
+          </Text>
+        </View>
+      )}
+
       {/* Controls */}
       <View style={styles.controls}>
         {routeGeometry && (
@@ -322,4 +350,23 @@ const styles = StyleSheet.create({
   errorBanner: { position: 'absolute', left: 16, right: 16, borderRadius: 8, padding: 12, zIndex: 5 },
   errorText: { fontSize: 14, textAlign: 'center' },
   controls: { position: 'absolute', bottom: 40, right: 20, gap: 12 },
+  routeInfoBox: {
+    position: 'absolute',
+    top: 120,
+    left: 16,
+    right: 16,
+    backgroundColor: 'white',
+    padding: 12,
+    borderRadius: 10,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+
+  routeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
