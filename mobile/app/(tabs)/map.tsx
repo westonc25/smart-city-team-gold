@@ -39,6 +39,8 @@ export default function MapScreen() {
   const [routeGeometry, setRouteGeometry] = useState<any | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
+  const [steps, setSteps] = useState<any[]>([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   const centerOnUser = useCallback(async () => {
     if (isLocating) return;
@@ -141,6 +143,7 @@ export default function MapScreen() {
     setRouteInfo(null);
     setSearchResults([]);
     setIsSearching(false);
+    setSteps([]);
   }, []);
 
   const showLoading = !isMapReady || (isLocating && !userLocation) || isRouting;
@@ -203,14 +206,22 @@ export default function MapScreen() {
           distance: route.distance,
           duration: route.duration,
         });
+
+        const routeSteps = route.legs[0].steps;
+        setSteps(routeSteps);
+        setCurrentStepIndex(0);
+
       } 
       else 
       {
         setRouteGeometry(null);
         setRouteInfo(null);
+        setSteps([]);
         throw new Error('No route data found');
       }
-    } catch (error) {
+    } 
+    catch (error) 
+    {
       console.error('Route fetch failed:', error);
     }
 
@@ -222,12 +233,56 @@ export default function MapScreen() {
     void fetchRoute();
   }, [userLocation, destination, fetchRoute]);
 
+  useEffect(() => {
+    if (!userLocation || steps.length === 0) return;
+
+    const currentStep = steps[currentStepIndex];
+    if (!currentStep) return;
+
+    const [stepLng, stepLat] = currentStep.maneuver.location;
+
+    const toRadians = (deg: number) => deg * (Math.PI / 180);
+
+    const R = 6371000; // meters
+    const dLat = toRadians(stepLat - userLocation[1]);
+    const dLng = toRadians(stepLng - userLocation[0]);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(userLocation[1])) *
+        Math.cos(toRadians(stepLat)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    if (distance < 30) {
+      setCurrentStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+    }
+  }, [userLocation, steps, currentStepIndex]);
+
   return (
     <ThemedView style={styles.container}>
       <Mapbox.MapView style={styles.map} onDidFinishLoadingMap={handleMapReady}>
         <Mapbox.Camera ref={cameraRef} followZoomLevel={15} />
 
-        <Mapbox.LocationPuck puckBearingEnabled puckBearing="heading" pulsing={{ isEnabled: true }} />
+        <Mapbox.UserLocation
+          visible={false}
+          onUpdate={(location: any) => {
+            const coords: [number, number] = [
+              location.coords.longitude,
+              location.coords.latitude,
+            ];
+            setUserLocation(coords);
+          }}
+        />
+
+        <Mapbox.LocationPuck
+          puckBearingEnabled
+          puckBearing="heading"
+          pulsing={{ isEnabled: true }}
+        />
 
         {/* Your markers: forum posts */}
         {forumPostsState.map((post) => (
@@ -329,6 +384,15 @@ export default function MapScreen() {
         </View>
       )}
 
+      {steps.length > 0 && (
+        <View style={styles.stepBox}>
+          <Text style={styles.stepText}>
+            {steps[currentStepIndex]?.maneuver.instruction}
+          </Text>
+        </View>
+      )}
+
+
       {/* Controls */}
       <View style={styles.controls}>
         {routeGeometry && (
@@ -367,6 +431,22 @@ const styles = StyleSheet.create({
   routeText: {
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  stepBox: {
+    position: 'absolute',
+    top: 180,
+    left: 16,
+    right: 16,
+    backgroundColor: '#1E293B',
+    padding: 12,
+    borderRadius: 10,
+    zIndex: 10,
+  },
+
+  stepText: {
+    color: 'white',
+    fontSize: 14,
     textAlign: 'center',
   },
 });
