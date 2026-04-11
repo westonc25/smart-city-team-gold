@@ -2,11 +2,14 @@
   Loads posts from GET {API}/forum/posts (see lib/api-config: EXPO_PUBLIC_API_URL
   or platform defaults). Normalizes the payload into ForumContext so the feed
   and /post/[id] share the same data. Create-post remains client-side until POST exists.
+
+  Also requests the device location so each forum card can display "X.X mi" distance.
 */
 
 import { useMemo, useState, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
 import { ForumFeed } from '@/components/forum/ForumFeed';
@@ -50,6 +53,36 @@ export default function ForumScreen() {
 
   // Controls the visibility of the create post bottom sheet.
   const [modalVisible, setModalVisible] = useState(false);
+
+  // ---------- User location for "miles from you" ----------
+  const [userLat, setUserLat] = useState<number | undefined>(undefined);
+  const [userLon, setUserLon] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        if (!cancelled) {
+          setUserLat(loc.coords.latitude);
+          setUserLon(loc.coords.longitude);
+        }
+      } catch (err) {
+        console.warn('Could not get user location for distance display:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Label shown under the page title.
   const postCountText = useMemo(() => {
@@ -135,7 +168,7 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        <ForumFeed posts={posts} />
+        <ForumFeed posts={posts} userLat={userLat} userLon={userLon} />
       )}
 
       <CreatePostModal

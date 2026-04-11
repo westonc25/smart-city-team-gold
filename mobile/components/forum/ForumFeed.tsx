@@ -11,16 +11,19 @@ import { FlatList, StyleSheet } from 'react-native';
 
 type ForumFeedProps = {
   posts: ForumPost[];
+  /** Current user latitude (forwarded to each card for distance display). */
+  userLat?: number;
+  /** Current user longitude (forwarded to each card for distance display). */
+  userLon?: number;
 };
 
-export function ForumFeed({ posts }: ForumFeedProps) {
+export function ForumFeed({ posts, userLat, userLon }: ForumFeedProps) {
   return (
     <FlatList
       data={posts}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        // Each post is rendered through ForumPostCard
-        <ForumPostCard post={item} />
+        <ForumPostCard post={item} userLat={userLat} userLon={userLon} />
       )}
       contentContainerStyle={styles.listContent}
       showsVerticalScrollIndicator={false}
