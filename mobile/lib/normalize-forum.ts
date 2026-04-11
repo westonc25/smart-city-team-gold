@@ -1,4 +1,4 @@
-import { ForumCategory, ForumPost } from '@/types/forum';
+import { ForumCategory, ForumPost, VoteDirection } from '@/types/forum';
 
 const FORUM_CATEGORIES: ForumCategory[] = [
   'General',
@@ -75,6 +75,18 @@ export const normalizeForumPost = (raw: unknown): ForumPost | null => {
         .filter((c): c is NonNullable<typeof c> => c !== null)
     : undefined;
 
+  // Voting fields — default to zero / no vote when not provided by the backend.
+  const upvotesRaw = raw.upvotes ?? raw.up_votes ?? raw.likes;
+  const downvotesRaw = raw.downvotes ?? raw.down_votes ?? raw.dislikes;
+  const userVoteRaw = raw.userVote ?? raw.user_vote;
+
+  const upvotes =
+    typeof upvotesRaw === 'number' && Number.isFinite(upvotesRaw) ? upvotesRaw : 0;
+  const downvotes =
+    typeof downvotesRaw === 'number' && Number.isFinite(downvotesRaw) ? downvotesRaw : 0;
+  const userVote: VoteDirection =
+    userVoteRaw === 'up' || userVoteRaw === 'down' ? userVoteRaw : null;
+
   return {
     id,
     author,
@@ -85,6 +97,9 @@ export const normalizeForumPost = (raw: unknown): ForumPost | null => {
     comments: comments && comments.length > 0 ? comments : undefined,
     latitude,
     longitude,
+    upvotes,
+    downvotes,
+    userVote,
   };
 };
 

@@ -36,6 +36,10 @@ export const forumMockPosts: ForumPost[] = [
     // location fields for map/forum integration (not sure how yall wanna set this up but including for completeness)
     latitude: 36.8508,
     longitude: -76.2859,
+
+    upvotes: 7,
+    downvotes: 1,
+    userVote: null,
   },
   {
     id: '2',
@@ -49,13 +53,17 @@ export const forumMockPosts: ForumPost[] = [
       {
         id: 'c3',
         author: 'Alex Johnson',
-        content: 'I’ll be there. Are gloves and trash bags provided?',
+        content: "I'll be there. Are gloves and trash bags provided?",
         createdAt: '3h ago',
       },
     ],
 
     latitude: 36.8525,
     longitude: -76.2891,
+
+    upvotes: 14,
+    downvotes: 0,
+    userVote: null,
   },
   {
     id: '3',
@@ -66,5 +74,12 @@ export const forumMockPosts: ForumPost[] = [
     category: 'Question',
     createdAt: '1d ago',
     comments: [],
+
+    latitude: 36.8468,
+    longitude: -76.2920,
+
+    upvotes: 3,
+    downvotes: 2,
+    userVote: null,
   },
 ];

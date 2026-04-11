@@ -104,6 +104,9 @@ export function CreatePostModal({
       content: trimmedContent,
       category,
       createdAt: 'Just now',
+      upvotes: 0,
+      downvotes: 0,
+      userVote: null,
     };
 
     onSubmit(newPost);

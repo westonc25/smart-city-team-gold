@@ -16,6 +16,8 @@ export type ForumComment = {
   createdAt: string;
 };
 
+export type VoteDirection = 'up' | 'down' | null;
+
 export type ForumPost = {
   id: string;
   author: string;
@@ -31,4 +33,10 @@ export type ForumPost = {
   // Location data for map linked forum posts.
   latitude?: number;
   longitude?: number;
+
+  // Voting — tracks community engagement on each post.
+  upvotes: number;
+  downvotes: number;
+  /** The current user's vote on this post (null = no vote). */
+  userVote: VoteDirection;
 };

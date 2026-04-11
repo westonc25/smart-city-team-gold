@@ -11,24 +11,30 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as Location from 'expo-location';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumComment } from '@/types/forum';
+import { haversineDistanceMiles, formatMiles } from '@/lib/distance';
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const { posts, addComment } = useForum();
+  const { posts, addComment, votePost } = useForum();
   const post = posts.find((p) => p.id === id);
 
   const [commentText, setCommentText] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [inputRowHeight, setInputRowHeight] = useState(80);
+
+  // User location for distance display
+  const [userLat, setUserLat] = useState<number | undefined>(undefined);
+  const [userLon, setUserLon] = useState<number | undefined>(undefined);
 
   const borderColor = useThemeColor({ light: '#e5e7eb', dark: '#2a2f37' }, 'text');
   const mutedTextColor = useThemeColor({ light: '#6b7280', dark: '#9ca3af' }, 'text');
@@ -36,6 +42,27 @@ export default function PostDetailScreen() {
   const badgeBg = useThemeColor({ light: '#eaf6fb', dark: '#12303b' }, 'background');
   const inputBg = useThemeColor({ light: '#f9fafb', dark: '#1f2937' }, 'background');
   const textColor = useThemeColor({ light: '#11181C', dark: '#ECEDEE' }, 'text');
+
+  // Fetch user location once
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          setUserLat(loc.coords.latitude);
+          setUserLon(loc.coords.longitude);
+        }
+      } catch {
+        // Silently degrade — distance just won't show.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let showSub: EmitterSubscription;
@@ -104,6 +131,17 @@ export default function PostDetailScreen() {
     );
   }
 
+  const netVotes = post.upvotes - post.downvotes;
+
+  // Distance label
+  const distanceLabel =
+    userLat != null &&
+    userLon != null &&
+    post.latitude != null &&
+    post.longitude != null
+      ? formatMiles(haversineDistanceMiles(userLat, userLon, post.latitude, post.longitude))
+      : null;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
@@ -137,16 +175,44 @@ export default function PostDetailScreen() {
                   {post.category}
                 </ThemedText>
               </View>
-              <ThemedText style={[styles.timeText, { color: mutedTextColor }]}>
-                {post.createdAt}
-              </ThemedText>
+
+              <View style={styles.metaRight}>
+                {distanceLabel && (
+                  <ThemedText style={[styles.distanceText, { color: accentColor }]}>
+                    {distanceLabel}
+                  </ThemedText>
+                )}
+                <ThemedText style={[styles.timeText, { color: mutedTextColor }]}>
+                  {post.createdAt}
+                </ThemedText>
+              </View>
             </View>
 
             <ThemedText style={styles.title}>{post.title}</ThemedText>
             <ThemedText style={styles.content}>{post.content}</ThemedText>
-            <ThemedText style={[styles.authorText, { color: mutedTextColor }]}>
-              Posted by {post.author}
-            </ThemedText>
+
+            {/* Author + Voting row */}
+            <View style={styles.postFooterRow}>
+              <ThemedText style={[styles.authorText, { color: mutedTextColor }]}>
+                Posted by {post.author}
+              </ThemedText>
+
+              <View style={styles.voteRow}>
+                <Pressable onPress={() => votePost(post.id, 'up')} hitSlop={8} style={styles.voteButton}>
+                  <ThemedText style={[styles.voteIcon, post.userVote === 'up' && { color: '#22c55e' }]}>
+                    ▲
+                  </ThemedText>
+                </Pressable>
+                <ThemedText style={[styles.voteCount, { color: mutedTextColor }]}>
+                  {netVotes}
+                </ThemedText>
+                <Pressable onPress={() => votePost(post.id, 'down')} hitSlop={8} style={styles.voteButton}>
+                  <ThemedText style={[styles.voteIcon, post.userVote === 'down' && { color: '#ef4444' }]}>
+                    ▼
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
           </View>
 
           <View style={styles.commentsSection}>
@@ -250,6 +316,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  metaRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   badge: {
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -258,6 +329,10 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  distanceText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   timeText: {
     fontSize: 12,
@@ -274,7 +349,29 @@ const styles = StyleSheet.create({
   },
   authorText: {
     fontSize: 14,
+  },
+  postFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 4,
+  },
+  voteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  voteButton: {
+    padding: 6,
+  },
+  voteIcon: {
+    fontSize: 16,
+  },
+  voteCount: {
+    fontSize: 16,
+    fontWeight: '700',
+    minWidth: 24,
+    textAlign: 'center',
   },
   commentsSection: {
     padding: 16,
