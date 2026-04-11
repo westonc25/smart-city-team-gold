@@ -6,18 +6,24 @@
   BACKEND INTEGRATION:
   Replace this file with real data fetched from the backend.
 */
-
 import { ForumPost } from '@/types/forum';
+import { Image } from 'react-native';
+
+// image for streetlight outage post
+const streetlightImage = Image.resolveAssetSource(
+  require('@/assets/images/forum/streetlight-outage.jpg')
+).uri;
 
 export const forumMockPosts: ForumPost[] = [
   {
-    id: '1',
+     id: '1',
     author: 'Alex Johnson',
     title: 'Streetlight outage on Main St',
     content:
       'A few streetlights near Main St and 4th Ave were out last night. Has anyone else noticed this?',
     category: 'Safety',
     createdAt: '2h ago',
+    imageUri: streetlightImage,
     comments: [
       {
         id: 'c1',
@@ -33,7 +39,6 @@ export const forumMockPosts: ForumPost[] = [
       },
     ],
 
-    // location fields for map/forum integration (not sure how yall wanna set this up but including for completeness)
     latitude: 36.8508,
     longitude: -76.2859,
 

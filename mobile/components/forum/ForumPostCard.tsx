@@ -5,14 +5,14 @@
   distance from the user (when location data is available), and vote controls.
 */
 
-import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { useForum } from '@/context/ForumContext';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { formatMiles, haversineDistanceMiles } from '@/lib/distance';
 import { ForumPost } from '@/types/forum';
-import { haversineDistanceMiles, formatMiles } from '@/lib/distance';
+import { useRouter } from 'expo-router';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 type ForumPostCardProps = {
   post: ForumPost;
@@ -34,7 +34,6 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
   const commentCount = post.comments?.length ?? 0;
   const netVotes = post.upvotes - post.downvotes;
 
-  // Calculate distance when both user and post location are known.
   const distanceLabel =
     userLat != null &&
     userLon != null &&
@@ -50,7 +49,6 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
   return (
     <Pressable onPress={handlePress}>
       <ThemedView style={[styles.card, { borderColor }]}>
-        {/* ---- Header row: badge + distance / time ---- */}
         <View style={styles.headerRow}>
           <View style={[styles.badge, { backgroundColor: badgeBg }]}>
             <ThemedText style={[styles.badgeText, { color: accentColor }]}>
@@ -70,10 +68,18 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
           </View>
         </View>
 
-        <ThemedText style={styles.title} numberOfLines={2}>{post.title}</ThemedText>
-        <ThemedText style={styles.content} numberOfLines={3}>{post.content}</ThemedText>
+        <ThemedText style={styles.title} numberOfLines={2}>
+          {post.title}
+        </ThemedText>
 
-        {/* ---- Footer: author | comments | votes ---- */}
+        <ThemedText style={styles.content} numberOfLines={3}>
+          {post.content}
+        </ThemedText>
+
+        {post.imageUri ? (
+          <Image source={{ uri: post.imageUri }} style={styles.postImage} />
+        ) : null}
+
         <View style={styles.footerRow}>
           <ThemedText style={[styles.authorText, { color: mutedTextColor }]}>
             Posted by {post.author}
@@ -84,10 +90,12 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
               {commentCount === 1 ? '1 comment' : `${commentCount} comments`}
             </ThemedText>
 
-            {/* Vote controls */}
             <View style={styles.voteRow}>
               <Pressable
-                onPress={(e) => { e.stopPropagation(); votePost(post.id, 'up'); }}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  votePost(post.id, 'up');
+                }}
                 hitSlop={6}
                 style={styles.voteButton}
               >
@@ -106,7 +114,10 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
               </ThemedText>
 
               <Pressable
-                onPress={(e) => { e.stopPropagation(); votePost(post.id, 'down'); }}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  votePost(post.id, 'down');
+                }}
                 hitSlop={6}
                 style={styles.voteButton}
               >
@@ -175,6 +186,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     opacity: 0.9,
+  },
+  postImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginTop: 4,
   },
   footerRow: {
     flexDirection: 'row',

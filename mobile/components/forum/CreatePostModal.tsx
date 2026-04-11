@@ -10,9 +10,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumCategory, ForumPost } from '@/types/forum';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -38,10 +40,10 @@ export function CreatePostModal({
   onClose,
   onSubmit,
 }: CreatePostModalProps) {
-  // Local form state for new post creation.
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<ForumCategory>('General');
+  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
 
   const borderColor = useThemeColor(
     { light: '#d1d5db', dark: '#374151' },
@@ -64,11 +66,11 @@ export function CreatePostModal({
     'background'
   );
 
-  // Resets fields so old input is cleared before the next open
   const resetForm = () => {
     setTitle('');
     setContent('');
     setCategory('General');
+    setImageUri(undefined);
   };
 
   const handleClose = () => {
@@ -76,15 +78,50 @@ export function CreatePostModal({
     onClose();
   };
 
-  /*
-    CURRENT BEHAVIOR:
-    Validates user input, creates a frontend only ForumPost object,
-    and sends it upward to ForumScreen.
+  const pickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    BACKEND INTEGRATION:
-    This should eventually call a create post endpoint and use the
-    saved post returned by the backend.
-  */
+    if (!permission.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Please allow photo library access to choose an image.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      mediaTypes: ['images'],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Please allow camera access to take a photo.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      mediaTypes: ['images'],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleSubmit = () => {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
@@ -104,6 +141,7 @@ export function CreatePostModal({
       content: trimmedContent,
       category,
       createdAt: 'Just now',
+      imageUri,
       upvotes: 0,
       downvotes: 0,
       userVote: null,
@@ -200,6 +238,41 @@ export function CreatePostModal({
               maxLength={300}
             />
 
+            <ThemedText style={styles.label}>Photo (optional)</ThemedText>
+            <View style={styles.photoActions}>
+              <Pressable
+                style={[styles.photoButton, { borderColor }]}
+                onPress={pickFromGallery}
+              >
+                <ThemedText style={[styles.photoButtonText, { color: accentColor }]}>
+                  Choose from Gallery
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={[styles.photoButton, { borderColor }]}
+                onPress={takePhoto}
+              >
+                <ThemedText style={[styles.photoButtonText, { color: accentColor }]}>
+                  Take Photo
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {imageUri ? (
+              <View style={styles.previewWrapper}>
+                <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                <Pressable
+                  style={[styles.removeImageButton, { borderColor }]}
+                  onPress={() => setImageUri(undefined)}
+                >
+                  <ThemedText style={[styles.removeImageText, { color: accentColor }]}>
+                    Remove Photo
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
+
             <View style={styles.actions}>
               <Pressable
                 style={[styles.actionButton, styles.cancelButton, { borderColor }]}
@@ -275,6 +348,39 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 110,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  photoButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  photoButtonText: {
+    fontWeight: '600',
+  },
+  previewWrapper: {
+    marginTop: 12,
+    gap: 10,
+  },
+  previewImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 14,
+  },
+  removeImageButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  removeImageText: {
+    fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',

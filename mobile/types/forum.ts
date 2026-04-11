@@ -25,6 +25,7 @@ export type ForumPost = {
   content: string;
   category: ForumCategory;
   createdAt: string;
+  imageUri?: string;
 
   // Comments can either be populated directly with the post
   // or fetched separately by post id later.
