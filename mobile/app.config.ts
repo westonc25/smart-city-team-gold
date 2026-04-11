@@ -35,6 +35,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Allow SmartCity to access your photos so you can attach images to posts.',
+        cameraPermission:
+          'Allow SmartCity to use your camera so you can take a photo for a post.',
+      },
+    ],
+    [
       '@rnmapbox/maps',
       {
         RNMapboxMapsDownloadToken: process.env.RNMAPBOX_MAPS_DOWNLOAD_TOKEN,

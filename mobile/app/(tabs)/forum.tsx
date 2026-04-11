@@ -6,10 +6,10 @@
   Also requests the device location so each forum card can display "X.X mi" distance.
 */
 
-import { useMemo, useState, useEffect } from 'react';
+import * as Location from 'expo-location';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
 import { ForumFeed } from '@/components/forum/ForumFeed';

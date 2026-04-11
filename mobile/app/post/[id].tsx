@@ -1,7 +1,9 @@
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   EmitterSubscription,
+  Image,
   Keyboard,
   Platform,
   Pressable,
@@ -11,14 +13,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { formatMiles, haversineDistanceMiles } from '@/lib/distance';
 import { ForumComment } from '@/types/forum';
-import { haversineDistanceMiles, formatMiles } from '@/lib/distance';
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,7 +33,6 @@ export default function PostDetailScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [inputRowHeight, setInputRowHeight] = useState(80);
 
-  // User location for distance display
   const [userLat, setUserLat] = useState<number | undefined>(undefined);
   const [userLon, setUserLon] = useState<number | undefined>(undefined);
 
@@ -43,25 +43,30 @@ export default function PostDetailScreen() {
   const inputBg = useThemeColor({ light: '#f9fafb', dark: '#1f2937' }, 'background');
   const textColor = useThemeColor({ light: '#11181C', dark: '#ECEDEE' }, 'text');
 
-  // Fetch user location once
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
+
         const loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
+
         if (!cancelled) {
           setUserLat(loc.coords.latitude);
           setUserLon(loc.coords.longitude);
         }
       } catch {
-        // Silently degrade — distance just won't show.
+        // Distance just won't show if location fails.
       }
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -133,13 +138,14 @@ export default function PostDetailScreen() {
 
   const netVotes = post.upvotes - post.downvotes;
 
-  // Distance label
   const distanceLabel =
     userLat != null &&
     userLon != null &&
     post.latitude != null &&
     post.longitude != null
-      ? formatMiles(haversineDistanceMiles(userLat, userLon, post.latitude, post.longitude))
+      ? formatMiles(
+          haversineDistanceMiles(userLat, userLon, post.latitude, post.longitude)
+        )
       : null;
 
   return (
@@ -191,23 +197,46 @@ export default function PostDetailScreen() {
             <ThemedText style={styles.title}>{post.title}</ThemedText>
             <ThemedText style={styles.content}>{post.content}</ThemedText>
 
-            {/* Author + Voting row */}
+            {post.imageUri ? (
+              <Image source={{ uri: post.imageUri }} style={styles.postImage} />
+            ) : null}
+
             <View style={styles.postFooterRow}>
               <ThemedText style={[styles.authorText, { color: mutedTextColor }]}>
                 Posted by {post.author}
               </ThemedText>
 
               <View style={styles.voteRow}>
-                <Pressable onPress={() => votePost(post.id, 'up')} hitSlop={8} style={styles.voteButton}>
-                  <ThemedText style={[styles.voteIcon, post.userVote === 'up' && { color: '#22c55e' }]}>
+                <Pressable
+                  onPress={() => votePost(post.id, 'up')}
+                  hitSlop={8}
+                  style={styles.voteButton}
+                >
+                  <ThemedText
+                    style={[
+                      styles.voteIcon,
+                      post.userVote === 'up' && { color: '#22c55e' },
+                    ]}
+                  >
                     ▲
                   </ThemedText>
                 </Pressable>
+
                 <ThemedText style={[styles.voteCount, { color: mutedTextColor }]}>
                   {netVotes}
                 </ThemedText>
-                <Pressable onPress={() => votePost(post.id, 'down')} hitSlop={8} style={styles.voteButton}>
-                  <ThemedText style={[styles.voteIcon, post.userVote === 'down' && { color: '#ef4444' }]}>
+
+                <Pressable
+                  onPress={() => votePost(post.id, 'down')}
+                  hitSlop={8}
+                  style={styles.voteButton}
+                >
+                  <ThemedText
+                    style={[
+                      styles.voteIcon,
+                      post.userVote === 'down' && { color: '#ef4444' },
+                    ]}
+                  >
                     ▼
                   </ThemedText>
                 </Pressable>
@@ -347,14 +376,21 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     opacity: 0.9,
   },
+  postImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 14,
+  },
   authorText: {
     fontSize: 14,
+    flex: 1,
   },
   postFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
+    gap: 12,
   },
   voteRow: {
     flexDirection: 'row',
