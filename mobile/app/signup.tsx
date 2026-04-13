@@ -49,19 +49,34 @@ const isStrictEmail = (email: string) => {
 export default function Signup() {
   const insets = useSafeAreaInsets();
 
-  // Local state for signup form inputs.
-  // Send these values to account creation endpoint.
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSignup = () => {
+    if (!firstName.trim()) {
+      Alert.alert('Missing First Name', 'Enter your first name');
+      return;
+    }
+
+    if (!lastName.trim()) {
+      Alert.alert('Missing Last Name', 'Enter your last name');
+      return;
+    }
+
     if (!isStrictEmail(email)) {
       Alert.alert('Invalid Email', 'Enter a valid email');
       return;
     }
 
+    if (!password.trim()) {
+      Alert.alert('Missing Password', 'Enter a password');
+      return;
+    }
+
     // Replace this with real account creation logic.
-    // After successful signup, route user into main app.
+    // Send firstName, lastName, email, and password to backend.
     router.replace('/(tabs)/map');
   };
 
@@ -74,20 +89,20 @@ export default function Signup() {
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
             {
               paddingTop: insets.top + 24,
-              paddingBottom: Math.max(insets.bottom + 24, 24),
+              paddingBottom: Math.max(insets.bottom + 32, 32),
             },
           ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.iconCircle}>
               <Image
@@ -106,11 +121,39 @@ export default function Signup() {
             </ThemedText>
           </View>
 
-          {/* Signup Form Card */}
           <View style={styles.card}>
             <ThemedText style={styles.sectionTitle}>Create Account</ThemedText>
 
-            {/* Email Input */}
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, styles.halfInput]}>
+                <ThemedText style={styles.label}>First Name</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter first name"
+                  placeholderTextColor="#8E8E93"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                />
+              </View>
+
+              <View style={[styles.inputGroup, styles.halfInput]}>
+                <ThemedText style={styles.label}>Last Name</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter last name"
+                  placeholderTextColor="#8E8E93"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                />
+              </View>
+            </View>
+
             <View style={styles.inputGroup}>
               <ThemedText style={styles.label}>Email</ThemedText>
               <TextInput
@@ -122,10 +165,10 @@ export default function Signup() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                returnKeyType="next"
               />
             </View>
 
-            {/* Password Input */}
             <View style={styles.inputGroup}>
               <ThemedText style={styles.label}>Password</ThemedText>
               <TextInput
@@ -137,17 +180,16 @@ export default function Signup() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
+                returnKeyType="done"
               />
             </View>
 
-            {/* Create Account Button */}
             <Pressable style={styles.primaryButton} onPress={handleSignup}>
               <ThemedText style={styles.primaryButtonText}>
                 Create Account
               </ThemedText>
             </Pressable>
 
-            {/* Back to Login Button */}
             <Pressable style={styles.secondaryButton} onPress={handleGoToLogin}>
               <ThemedText style={styles.secondaryButtonText}>
                 Back to Login
@@ -216,6 +258,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#11181C',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfInput: {
+    flex: 1,
   },
   inputGroup: {
     gap: 6,
