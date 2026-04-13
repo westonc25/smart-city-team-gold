@@ -24,6 +24,11 @@ const MAPPING = {
   'magnifyingglass': 'search',
   'xmark.circle.fill': 'cancel',
   'location.fill': 'my-location',
+  'bell.fill': 'notifications',
+  'bell': 'notifications-none',
+  'checkmark.circle.fill': 'check-circle',
+  'xmark': 'close',
+  'trash': 'delete',
 } as IconMapping;
 
 /**

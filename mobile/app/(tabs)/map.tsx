@@ -6,6 +6,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchBar } from '@/components/SearchBar';
+import { SearchResultsList, SearchResult } from '@/components/map/SearchResultsList';
+import { NotificationBell } from '@/components/ui/NotificationBell';
+import { NotificationPanel } from '@/components/ui/NotificationPanel';
 import { Button } from '@/components/ui/Button';
 import { MapLoadingOverlay } from '@/components/ui/MapLoadingOverlay';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -19,6 +22,7 @@ export default function MapScreen() {
   const [isMapReady, setIsMapReady] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [notifPanelVisible, setNotifPanelVisible] = useState(false);
 
   const insets = useSafeAreaInsets();
   const errorBg = useThemeColor({ light: '#FEF2F2', dark: '#3B1C1C' }, 'background');
@@ -32,9 +36,7 @@ export default function MapScreen() {
   ];
   const forumPostsState = sampleForumPosts;
 
-  const [searchResults, setSearchResults] = useState<
-    { id: string; coordinate: [number, number]; placeName: string }[]
-  >([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [destination, setDestination] = useState<[number, number] | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<any | null>(null);
   const [isRouting, setIsRouting] = useState(false);
@@ -336,42 +338,38 @@ export default function MapScreen() {
 
       {/* Search bar */}
       <View style={[styles.searchContainer, { top: insets.top + 12 }]}>
-        <SearchBar onSearch={handleSearch} onClear={handleSearchClear} isSearching={isSearching} placeholder="Search places…" />
+        <View style={styles.searchRow}>
+          <View style={styles.searchBarWrapper}>
+            <SearchBar onSearch={handleSearch} onClear={handleSearchClear} isSearching={isSearching} placeholder="Search places…" />
+          </View>
+          {/* Notification bell — sits flush right of the search bar */}
+          <NotificationBell
+            onPress={() => setNotifPanelVisible(true)}
+            color="#0a7ea4"
+            size={22}
+          />
+        </View>
       </View>
 
+      {/* Polished scrollable search results dropdown */}
       {searchResults.length > 0 && (
-        <View style={{
-          position: 'absolute',
-          top: insets.top + 60,
-          left: 16,
-          right: 16,
-          backgroundColor: 'white',
-          borderRadius: 8,
-          zIndex: 10,
-          maxHeight: 200,
-        }}>
-          {searchResults.map((result) => (
-            <Text
-              key={result.id}
-              style={{ padding: 12, borderBottomWidth: 1 }}
-              onPress={() => {
-                console.log("SELECTED FROM LIST:", result.placeName);
-
-                setDestination(result.coordinate);
-
-                setSearchResults([]);
-                setIsSearching(false);
-              }}
-            >
-              {result.placeName}
-            </Text>
-          ))}
-        </View>
+        <SearchResultsList
+          results={searchResults}
+          onSelect={(result) => {
+            setDestination(result.coordinate);
+            setSearchResults([]);
+            setIsSearching(false);
+          }}
+          style={[
+            styles.resultsDropdown,
+            { top: insets.top + 64 },
+          ]}
+        />
       )}
 
       {/* Location error banner */}
       {locationError && (
-        <View style={[styles.errorBanner, { backgroundColor: errorBg, top: insets.top + 68 }]}>
+        <View style={[styles.errorBanner, { backgroundColor: errorBg, top: insets.top + 80 }]}>
           <Text style={[styles.errorText, { color: errorText }]}>{locationError}</Text>
         </View>
       )}
@@ -403,6 +401,12 @@ export default function MapScreen() {
 
       {/* Loading overlay */}
       <MapLoadingOverlay visible={showLoading} />
+
+      {/* Notification panel (slide-in inbox) */}
+      <NotificationPanel
+        visible={notifPanelVisible}
+        onClose={() => setNotifPanelVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -411,6 +415,20 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
   searchContainer: { position: 'absolute', left: 16, right: 16, zIndex: 5 },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchBarWrapper: {
+    flex: 1,
+  },
+  resultsDropdown: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 10,
+  },
   errorBanner: { position: 'absolute', left: 16, right: 16, borderRadius: 8, padding: 12, zIndex: 5 },
   errorText: { fontSize: 14, textAlign: 'center' },
   controls: { position: 'absolute', bottom: 40, right: 20, gap: 12 },

@@ -22,8 +22,10 @@ import {
   mockUserProfile,
   ProfileFormData,
 } from '@/data/profileMockData';
+import { useNotifications } from '@/context/NotificationContext';
 
 export default function ProfileScreen() {
+  const { permissionGranted, requestPermission } = useNotifications();
   const insets = useSafeAreaInsets();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -179,17 +181,29 @@ export default function ProfileScreen() {
               <View style={styles.preferenceTextContainer}>
                 <ThemedText style={styles.preferenceTitle}>Notifications</ThemedText>
                 <ThemedText style={styles.preferenceSubtitle}>
-                  Receive updates about your posts, replies, and account activity.
+                  {permissionGranted
+                    ? 'Notifications are enabled. You will receive community alerts.'
+                    : 'Enable notifications to receive community alerts and replies.'}
                 </ThemedText>
               </View>
 
               <Switch
-                value={formData.notificationsEnabled}
-                onValueChange={(value) =>
-                  handleFieldChange('notificationsEnabled', value)
-                }
+                value={permissionGranted}
+                onValueChange={async (value) => {
+                  if (value) {
+                    // Request OS permission — dialog appears on first tap
+                    await requestPermission();
+                  } else {
+                    // Can't revoke system permission programmatically; guide user
+                    Alert.alert(
+                      'Disable Notifications',
+                      'To turn off notifications, go to your device Settings and disable them for Smart City.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                }}
                 trackColor={{ false: '#D1D1D6', true: '#7CC6DA' }}
-                thumbColor={formData.notificationsEnabled ? '#0A7EA4' : '#F4F4F5'}
+                thumbColor={permissionGranted ? '#0A7EA4' : '#F4F4F5'}
               />
             </View>
           </View>
