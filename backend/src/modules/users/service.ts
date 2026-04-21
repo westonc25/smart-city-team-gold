@@ -24,27 +24,32 @@ export abstract class UserService {
     // Update user in database
     // Returns the user back for frontend to use
     static async updateUser(id: number, { first_name, last_name, email, profile_picture, password }: UserModel.updateUser) {
-        
+
+        // Hash the new password if one was provided
+        const password_hash = password ? await Bun.password.hash(password) : undefined;
+
         // Updates the user in the database
-        // Uses shorthand if else statement for data
-        const update = await db`
+        // Uses COALESCE so only fields that are provided get updated
+        await db`
         UPDATE users
         SET
-            first_name = ${first_name ? first_name : undefined},
-            last_name = ${last_name ? last_name : undefined},
-            email = ${email ? email : undefined},
-            profile_picture = ${profile_picture ? profile_picture : undefined},
-            password = ${password ? password : undefined},
+            first_name = COALESCE(${first_name ?? null}, first_name),
+            last_name = COALESCE(${last_name ?? null}, last_name),
+            email = COALESCE(${email ?? null}, email),
+            profile_picture = COALESCE(${profile_picture ?? null}, profile_picture),
+            password_hash = COALESCE(${password_hash ?? null}, password_hash),
+            updated_at = NOW()
         WHERE userID = ${id}
-        `
+        `;
 
-        // Return the update user infromation
+        // Return the updated user information
         const [updated] = await db`
         SELECT *
         FROM users
         WHERE userID = ${id}
         LIMIT 1`;
 
+        if (!updated) throw status(404, "User not found");
         return updated;
 
     }
