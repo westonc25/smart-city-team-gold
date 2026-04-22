@@ -6,8 +6,14 @@
   with real API calls and forum data.
 */
 
+<<<<<<< HEAD
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+=======
+import * as Location from 'expo-location';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+>>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
@@ -16,7 +22,26 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { forumMockPosts } from '@/data/forumMockData';
 import { useThemeColor } from '@/hooks/use-theme-color';
+<<<<<<< HEAD
 import { ForumComment, ForumPost } from '@/types/forum';
+=======
+import { normalizeForumPost, normalizeForumPostList } from '@/lib/normalize-forum';
+import { ForumService } from '@/services/forum';
+import { ForumPost } from '@/types/forum';
+
+const extractPostArray = (data: unknown): unknown[] => {
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'object' && data !== null && 'data' in data) {
+    const inner = (data as { data: unknown }).data;
+    if (Array.isArray(inner)) return inner;
+  }
+  if (typeof data === 'object' && data !== null && 'posts' in data) {
+    const inner = (data as { posts: unknown }).posts;
+    if (Array.isArray(inner)) return inner;
+  }
+  return [];
+};
+>>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
@@ -55,6 +80,7 @@ export default function ForumScreen() {
     return `${posts.length} posts`;
   }, [posts.length]);
 
+<<<<<<< HEAD
   /*
     CURRENT BEHAVIOR:
     Adds a newly created post to local state so it appears at the top of the feed.
@@ -94,6 +120,39 @@ export default function ForumScreen() {
           : post
       )
     );
+=======
+  // Fetches posts from the backend on screen load and populates ForumContext.
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const data: unknown = await ForumService.getPosts();
+        const rawList = extractPostArray(data);
+        const normalized = normalizeForumPostList(rawList);
+        replacePosts(normalized);
+      } catch (error) {
+        console.error('Failed to fetch posts:', error);
+        replacePosts([]);
+      }
+    };
+
+    fetchPosts();
+  }, [replacePosts]);
+
+  // Sends the new post to the backend, then adds the saved post to context.
+  // The backend attaches the user's current location via their session.
+  const handleAddPost = async (newPost: ForumPost) => {
+    try {
+      const data = await ForumService.createPost(
+        newPost.title,
+        newPost.content,
+        newPost.category
+      );
+      const savedPost = normalizeForumPost(data.post);
+      addPost(savedPost ?? newPost);
+    } catch (error: any) {
+      Alert.alert('Failed to create post', error.message);
+    }
+>>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)
   };
 
   return (

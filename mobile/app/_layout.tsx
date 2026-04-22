@@ -17,7 +17,7 @@ export default function RootLayout() {
   // On app launch, check if a token exists and skip login if so
   useEffect(() => {
     AuthService.getToken().then(token => {
-      if (token) router.replace('/(tabs)/map');
+      if (token) router.replace({ pathname: '/(tabs)/map' });
     });
   }, []);
 
