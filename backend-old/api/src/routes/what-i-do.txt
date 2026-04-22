@@ -1,2 +1,0 @@
-Map URLs to controller functions.
-Example: /users → getUsers() or createUser() from the controller folder

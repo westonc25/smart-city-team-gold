@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -7,8 +7,16 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { MapService } from '@/services/map';
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+
+  // Begin tracking user location when logged in and tabs load, stop tracking when they logout
+  useEffect(() => {
+    MapService.startTracking();
+    return () => MapService.stopTracking();
+  }, []);
 
   return (
     <SafeAreaProvider>

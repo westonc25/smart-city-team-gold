@@ -15,6 +15,10 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '');
 
+if (!process.env.EXPO_PUBLIC_MAPBOX_TOKEN) {
+  console.warn('Mapbox token is missing!');
+}
+
 export default function MapScreen() {
   const cameraRef = useRef<Mapbox.Camera>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
