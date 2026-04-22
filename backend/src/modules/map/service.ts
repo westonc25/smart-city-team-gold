@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { status } from "elysia";
 import { db } from "../../db";
  
@@ -90,49 +89,3 @@ export abstract class MapService {
 }    
 
 // Get all users by location
-=======
-import { db } from "../../db";
-
-export abstract class MapService {
-
-    // Saves the user's current location and links it to their active session.
-    // This is needed for the getForumPosts15mi.
-    static async updateLocation(jti: string, latitude: number, longitude: number) {
-
-        // Find the active session to check if a location row already exists
-        const [session] = await db`
-            SELECT sessions_id, location_id
-            FROM sessions
-            WHERE jti = ${jti} AND expires_at > NOW()
-            LIMIT 1
-        `;
-
-        if (!session) return { success: false, message: 'Session not found or expired' };
-
-        if (session.location_id) {
-            // Update the existing location row in place
-            await db`
-                UPDATE current_location
-                SET geo_point = POINT(${longitude}, ${latitude})
-                WHERE current_location_id = ${session.location_id}
-            `;
-        } else {
-            // Insert a new location row and link it to the session
-            await db`
-                INSERT INTO current_location (geo_point)
-                VALUES (POINT(${longitude}, ${latitude}))
-            `;
-
-            const [{ lastId }] = await db`SELECT LAST_INSERT_ID() AS lastId`;
-
-            await db`
-                UPDATE sessions
-                SET location_id = ${lastId}
-                WHERE sessions_id = ${session.sessions_id}
-            `;
-        }
-
-        return { success: true };
-    }
-}
->>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)

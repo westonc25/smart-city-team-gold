@@ -6,14 +6,9 @@
   with real API calls and forum data.
 */
 
-<<<<<<< HEAD
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-=======
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
->>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
@@ -22,9 +17,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { forumMockPosts } from '@/data/forumMockData';
 import { useThemeColor } from '@/hooks/use-theme-color';
-<<<<<<< HEAD
-import { ForumComment, ForumPost } from '@/types/forum';
-=======
 import { normalizeForumPost, normalizeForumPostList } from '@/lib/normalize-forum';
 import { ForumService } from '@/services/forum';
 import { ForumPost } from '@/types/forum';
@@ -41,7 +33,6 @@ const extractPostArray = (data: unknown): unknown[] => {
   }
   return [];
 };
->>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
@@ -80,47 +71,6 @@ export default function ForumScreen() {
     return `${posts.length} posts`;
   }, [posts.length]);
 
-<<<<<<< HEAD
-  /*
-    CURRENT BEHAVIOR:
-    Adds a newly created post to local state so it appears at the top of the feed.
-
-    BACKEND INTEGRATION:
-    This should eventually call a POST endpoint and use the saved post
-    returned by the backend.
-  */
-  const handleAddPost = (newPost: ForumPost) => {
-    setPosts((prev) => [newPost, ...prev]);
-  };
-
-  /*
-    CURRENT BEHAVIOR:
-    Creates a local comment object and appends it to the matching post
-
-    BACKEND INTEGRATION:
-    Replace with API call to create/store a comment for the given post id.
-    The backend should return the real comment id, author, and timestamp  
-    (or however yall set it up) )
-  */
-  const handleAddComment = (postId: string, commentText: string) => {
-    const newComment: ForumComment = {
-      id: Date.now().toString(),
-      author: 'Resident User',
-      content: commentText,
-      createdAt: 'Just now',
-    };
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [...(post.comments ?? []), newComment],
-            }
-          : post
-      )
-    );
-=======
   // Fetches posts from the backend on screen load and populates ForumContext.
   useEffect(() => {
     const fetchPosts = async () => {
@@ -139,7 +89,7 @@ export default function ForumScreen() {
   }, [replacePosts]);
 
   // Sends the new post to the backend, then adds the saved post to context.
-  // The backend attaches the user's current location via their session.
+  // The backend attaches the user's current location using their session.
   const handleAddPost = async (newPost: ForumPost) => {
     try {
       const data = await ForumService.createPost(
@@ -152,7 +102,6 @@ export default function ForumScreen() {
     } catch (error: any) {
       Alert.alert('Failed to create post', error.message);
     }
->>>>>>> b97b3ac (finished implementing forum and map in the backend, connected forum to the frontend and fixed some minor bugs.)
   };
 
   return (

@@ -6,7 +6,7 @@ import { AuthService} from "../auth/service";
 
 export abstract class ForumService {
   // Store a new created forum post
-  static async createPost({jti, title, content ,location_name, category}: ForumModel.createPost) {
+  static async createPost(jti: string, {title, content, location_name, category}: ForumModel.createPost) {
 
     // Get user current location
     // Talk to sessions table first
@@ -60,7 +60,7 @@ export abstract class ForumService {
   }
 
   // Store a new created comment on a forum post
-  static async createComment({ post_id, jti, content }: ForumModel.createComment) {
+  static async createComment(post_id: number, jti: string, { content }: ForumModel.createComment) {
 
     // Get session to verify the user
     const session = await AuthService.getSessionWithLocation(jti);
