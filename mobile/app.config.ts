@@ -1,4 +1,4 @@
-import { ExpoConfig, ConfigContext } from 'expo/config';
+import { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -22,6 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     package: 'com.anonymous.mobile',
+    softwareKeyboardLayoutMode: 'resize',
     permissions: [
       'android.permission.ACCESS_COARSE_LOCATION',
       'android.permission.ACCESS_FINE_LOCATION',
@@ -33,6 +34,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-secure-store',
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Allow SmartCity to access your photos so you can attach images to posts.',
+        cameraPermission:
+          'Allow SmartCity to use your camera so you can take a photo for a post.',
+      },
+    ],
     [
       '@rnmapbox/maps',
       {
@@ -72,6 +83,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     ...config.extra,
     MAPBOX_TOKEN: process.env.EXPO_PUBLIC_MAPBOX_TOKEN,
+    /** Optional; when unset, mobile/lib/api-config uses platform defaults. */
+    API_URL: process.env.EXPO_PUBLIC_API_URL,
     eas: {
       projectId: '06985c3b-9457-4b98-a6e2-81a29f5296e1',
     },

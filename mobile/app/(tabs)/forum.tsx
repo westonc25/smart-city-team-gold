@@ -1,9 +1,9 @@
 /*
-  Current implementation uses local mock data so the UI can be
-  developed and tested before backend integration.
+  Loads posts from GET {API}/forum/posts (see lib/api-config: EXPO_PUBLIC_API_URL
+  or platform defaults). Normalizes the payload into ForumContext so the feed
+  and /post/[id] share the same data. Create-post remains client-side until POST exists.
 
-  Backend team will replace mock/local create post and add comment flows
-  with real API calls and forum data.
+  Also requests the device location so each forum card can display "X.X mi" distance.
 */
 
 import * as Location from 'expo-location';
@@ -15,7 +15,7 @@ import { CreatePostModal } from '@/components/forum/CreatePostModal';
 import { ForumFeed } from '@/components/forum/ForumFeed';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { forumMockPosts } from '@/data/forumMockData';
+import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { normalizeForumPost, normalizeForumPostList } from '@/lib/normalize-forum';
 import { ForumService } from '@/services/forum';
@@ -36,8 +36,8 @@ const extractPostArray = (data: unknown): unknown[] => {
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
+  const { posts, addPost, replacePosts } = useForum();
 
-  // Theme aware colors so the forum screen matches the rest of the app
   const accentColor = useThemeColor(
     { light: '#0a7ea4', dark: '#4FC3F7' },
     'tint'
@@ -51,18 +51,38 @@ export default function ForumScreen() {
     'text'
   );
 
-  /*
-    TEMPORARY FRONTEND STATE:
-    Posts currently come from local mock data so the forum UI can be tested
-    before backend forum endpoints are connected 
-
-    BACKEND INTEGRATION:
-    Replace the mock data source with posts fetched from the backend.
-  */
-  const [posts, setPosts] = useState<ForumPost[]>(forumMockPosts);
-
   // Controls the visibility of the create post bottom sheet.
   const [modalVisible, setModalVisible] = useState(false);
+
+  // ---------- User location for "miles from you" ----------
+  const [userLat, setUserLat] = useState<number | undefined>(undefined);
+  const [userLon, setUserLon] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        if (!cancelled) {
+          setUserLat(loc.coords.latitude);
+          setUserLon(loc.coords.longitude);
+        }
+      } catch (err) {
+        console.warn('Could not get user location for distance display:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Label shown under the page title.
   const postCountText = useMemo(() => {
@@ -141,14 +161,9 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        /*
-          ForumFeed is separated from the screen so feed rendering is easier to 
-          replace/update when we add the backend data 
-        */
-        <ForumFeed posts={posts} onAddComment={handleAddComment} />
+        <ForumFeed posts={posts} userLat={userLat} userLon={userLon} />
       )}
 
-      {/* Create post UI is in its own component for easier maintenance. */}
       <CreatePostModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}

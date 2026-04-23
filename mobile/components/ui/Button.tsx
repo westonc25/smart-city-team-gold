@@ -1,5 +1,5 @@
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { ActivityIndicator, StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 
 interface ButtonProps {
     title: string;
@@ -20,7 +20,6 @@ export function Button({
     style,
     textStyle
 }: ButtonProps) {
-    const backgroundColor = useThemeColor({ light: variant === 'outline' ? 'transparent' : '#0a7ea4', dark: variant === 'outline' ? 'transparent' : '#fff' }, 'background');
     const textColor = useThemeColor({ light: variant === 'outline' ? '#0a7ea4' : '#fff', dark: variant === 'outline' ? '#fff' : '#000' }, 'text');
 
     const buttonStyles = [

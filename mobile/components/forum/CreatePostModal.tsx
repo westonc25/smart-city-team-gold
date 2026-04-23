@@ -3,20 +3,23 @@
 
   Current implementation builds a frontend only ForumPost object and passes it
   up to the parent screen. Backend integration will replace that flow with
-  a real create post API request 
+  a real create post API request
 */
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { ForumCategory, ForumPost } from '@/types/forum';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -37,10 +40,10 @@ export function CreatePostModal({
   onClose,
   onSubmit,
 }: CreatePostModalProps) {
-  // Local form state for new post creation.
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<ForumCategory>('General');
+  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
 
   const borderColor = useThemeColor(
     { light: '#d1d5db', dark: '#374151' },
@@ -63,11 +66,11 @@ export function CreatePostModal({
     'background'
   );
 
-  // Resets fields so old input is cleared before the next open
   const resetForm = () => {
     setTitle('');
     setContent('');
     setCategory('General');
+    setImageUri(undefined);
   };
 
   const handleClose = () => {
@@ -75,15 +78,50 @@ export function CreatePostModal({
     onClose();
   };
 
-  /*
-    CURRENT BEHAVIOR:
-    Validates user input, creates a frontend only ForumPost object,
-    and sends it upward to ForumScreen.
+  const pickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    BACKEND INTEGRATION:
-    This should eventually call a create post endpoint and use the
-    saved post returned by the backend.
-  */
+    if (!permission.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Please allow photo library access to choose an image.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      mediaTypes: ['images'],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Please allow camera access to take a photo.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      mediaTypes: ['images'],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleSubmit = () => {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
@@ -103,6 +141,10 @@ export function CreatePostModal({
       content: trimmedContent,
       category,
       createdAt: 'Just now',
+      imageUri,
+      upvotes: 0,
+      downvotes: 0,
+      userVote: null,
     };
 
     onSubmit(newPost);
@@ -112,96 +154,142 @@ export function CreatePostModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      {/* Helps prevent the keyboard from covering the input fields. */}
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ThemedView style={[styles.modalCard, { backgroundColor: modalBg }]}>
-          <ThemedText type="subtitle">Create Post</ThemedText>
-          <ThemedText style={[styles.helperText, { color: mutedTextColor }]}>
-            Share an update, event, question, or safety concern with the
-            community.
-          </ThemedText>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <ThemedView style={[styles.modalCard, { backgroundColor: modalBg }]}>
+            <ThemedText type="subtitle">Create Post</ThemedText>
+            <ThemedText style={[styles.helperText, { color: mutedTextColor }]}>
+              Share an update, event, question, or safety concern with the
+              community.
+            </ThemedText>
 
-          <ThemedText style={styles.label}>Category</ThemedText>
-          <View style={styles.categoryRow}>
-            {categories.map((item) => {
-              const isSelected = category === item;
+            <ThemedText style={styles.label}>Category</ThemedText>
+            <View style={styles.categoryRow}>
+              {categories.map((item) => {
+                const isSelected = category === item;
 
-              return (
-                <Pressable
-                  key={item}
-                  style={[
-                    styles.categoryOption,
-                    {
-                      borderColor: isSelected ? accentColor : borderColor,
-                      backgroundColor: isSelected ? accentColor : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setCategory(item)}>
-                  <ThemedText
+                return (
+                  <Pressable
+                    key={item}
                     style={[
-                      styles.categoryOptionText,
-                      isSelected && styles.categoryOptionTextSelected,
-                    ]}>
-                    {item}
+                      styles.categoryOption,
+                      {
+                        borderColor: isSelected ? accentColor : borderColor,
+                        backgroundColor: isSelected ? accentColor : 'transparent',
+                      },
+                    ]}
+                    onPress={() => setCategory(item)}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.categoryOptionText,
+                        isSelected && styles.categoryOptionTextSelected,
+                      ]}
+                    >
+                      {item}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <ThemedText style={styles.label}>Title</ThemedText>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Enter post title"
+              placeholderTextColor={mutedTextColor}
+              style={[
+                styles.input,
+                {
+                  borderColor,
+                  backgroundColor: mutedBg,
+                  color: Platform.OS === 'android' ? '#000000' : undefined,
+                },
+              ]}
+              maxLength={80}
+            />
+
+            <ThemedText style={styles.label}>Post</ThemedText>
+            <TextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="What would you like to share?"
+              placeholderTextColor={mutedTextColor}
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  borderColor,
+                  backgroundColor: mutedBg,
+                  color: Platform.OS === 'android' ? '#000000' : undefined,
+                },
+              ]}
+              multiline
+              textAlignVertical="top"
+              maxLength={300}
+            />
+
+            <ThemedText style={styles.label}>Photo (optional)</ThemedText>
+            <View style={styles.photoActions}>
+              <Pressable
+                style={[styles.photoButton, { borderColor }]}
+                onPress={pickFromGallery}
+              >
+                <ThemedText style={[styles.photoButtonText, { color: accentColor }]}>
+                  Choose from Gallery
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={[styles.photoButton, { borderColor }]}
+                onPress={takePhoto}
+              >
+                <ThemedText style={[styles.photoButtonText, { color: accentColor }]}>
+                  Take Photo
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {imageUri ? (
+              <View style={styles.previewWrapper}>
+                <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                <Pressable
+                  style={[styles.removeImageButton, { borderColor }]}
+                  onPress={() => setImageUri(undefined)}
+                >
+                  <ThemedText style={[styles.removeImageText, { color: accentColor }]}>
+                    Remove Photo
                   </ThemedText>
                 </Pressable>
-              );
-            })}
-          </View>
+              </View>
+            ) : null}
 
-          <ThemedText style={styles.label}>Title</ThemedText>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter post title"
-            placeholderTextColor={mutedTextColor}
-            style={[
-              styles.input,
-              {
-                borderColor,
-                backgroundColor: mutedBg,
-                color: Platform.OS === 'android' ? '#000000' : undefined,
-              },
-            ]}
-            maxLength={80}
-          />
+            <View style={styles.actions}>
+              <Pressable
+                style={[styles.actionButton, styles.cancelButton, { borderColor }]}
+                onPress={handleClose}
+              >
+                <ThemedText style={styles.cancelText}>Cancel</ThemedText>
+              </Pressable>
 
-          <ThemedText style={styles.label}>Post</ThemedText>
-          <TextInput
-            value={content}
-            onChangeText={setContent}
-            placeholder="What would you like to share?"
-            placeholderTextColor={mutedTextColor}
-            style={[
-              styles.input,
-              styles.textArea,
-              {
-                borderColor,
-                backgroundColor: mutedBg,
-                color: Platform.OS === 'android' ? '#000000' : undefined,
-              },
-            ]}
-            multiline
-            textAlignVertical="top"
-            maxLength={300}
-          />
-
-          <View style={styles.actions}>
-            <Pressable
-              style={[styles.actionButton, styles.cancelButton, { borderColor }]}
-              onPress={handleClose}>
-              <ThemedText style={styles.cancelText}>Cancel</ThemedText>
-            </Pressable>
-
-            <Pressable
-              style={[styles.actionButton, { backgroundColor: accentColor }]}
-              onPress={handleSubmit}>
-              <ThemedText style={styles.submitText}>Post</ThemedText>
-            </Pressable>
-          </View>
-        </ThemedView>
+              <Pressable
+                style={[styles.actionButton, { backgroundColor: accentColor }]}
+                onPress={handleSubmit}
+              >
+                <ThemedText style={styles.submitText}>Post</ThemedText>
+              </Pressable>
+            </View>
+          </ThemedView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -210,8 +298,11 @@ export function CreatePostModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   modalCard: {
     borderTopLeftRadius: 20,
@@ -257,6 +348,39 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 110,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  photoButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  photoButtonText: {
+    fontWeight: '600',
+  },
+  previewWrapper: {
+    marginTop: 12,
+    gap: 10,
+  },
+  previewImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 14,
+  },
+  removeImageButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  removeImageText: {
+    fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',
