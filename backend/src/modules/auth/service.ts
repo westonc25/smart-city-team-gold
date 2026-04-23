@@ -39,7 +39,7 @@ export abstract class AuthService {
     // Check the session still exists and hasn't expired
     static async validateSession(jti: string): Promise<boolean> {
         const [session] = await db`
-        SELECT id FROM sessions
+        SELECT sessions_id FROM sessions
         WHERE jti = ${jti} AND expires_at > NOW()
         LIMIT 1
         `;
