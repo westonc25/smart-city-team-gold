@@ -138,6 +138,17 @@ export abstract class ForumService {
     const session = await AuthService.getSessionWithLocation(jti);
     if (!session) throw new Error("Invalid or expired session");
 
+    // If no location is set yet, return all posts ordered by recency
+    if (!session.geo_point) {
+      const posts = await db`
+        SELECT fp.*, NULL AS distance_miles
+        FROM forum_post fp
+        WHERE fp.is_deleted = 0
+        ORDER BY fp.created_at DESC
+      `;
+      return posts;
+    }
+
     // get forum posts within 15 miles of the user
     const posts = await db`
         SELECT

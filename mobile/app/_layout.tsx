@@ -17,10 +17,12 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  // On app launch, check if a token exists and skip login if so
+  // On app launch, validate the stored token against the server.
+  // If valid, skip login. If expired or missing, authenticatedFetch clears
+  // the token and stays on the login screen.
   useEffect(() => {
-    AuthService.getToken().then(token => {
-      if (token) router.replace({ pathname: '/(tabs)/map' });
+    AuthService.validateToken().then(valid => {
+      if (valid) router.replace({ pathname: '/(tabs)/map' });
     });
   }, []);
 

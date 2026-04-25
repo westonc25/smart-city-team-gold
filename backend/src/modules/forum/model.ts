@@ -11,8 +11,6 @@ export const ForumModel = {
         category: t.Optional(t.String()),
     }),
     createComment: t.Object({
-        post_id: t.Number(),
-        jti: t.String(),
         content: t.String(),
     }),
     votePost: t.Object({

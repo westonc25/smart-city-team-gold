@@ -18,6 +18,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { normalizeForumPost, normalizeForumPostList } from '@/lib/normalize-forum';
+import { AuthService } from '@/services/auth';
 import { ForumService } from '@/services/forum';
 import { ForumPost } from '@/types/forum';
 
@@ -95,6 +96,9 @@ export default function ForumScreen() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        const token = await AuthService.getToken();
+        if (!token) return;
+
         const data: unknown = await ForumService.getPosts();
         const rawList = extractPostArray(data);
         const normalized = normalizeForumPostList(rawList);
