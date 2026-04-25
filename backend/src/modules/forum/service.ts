@@ -45,7 +45,7 @@ export abstract class ForumService {
 
    // Check that the post was created successfully
     const [row] = await db`
-        SELECT *
+        SELECT *, CONCAT(first_name, ' ', last_name) AS author
         FROM forum_post
         WHERE user_session_id = ${session.sessions_id}
         ORDER BY created_at DESC
@@ -98,9 +98,8 @@ export abstract class ForumService {
         ${user.last_name})
     `;
 
-    // Return the new comment row — name is already on it, no join needed
     const [comment] = await db`
-      SELECT *
+      SELECT *, CONCAT(first_name, ' ', last_name) AS author
       FROM forum_comments
       WHERE user_session_id = ${session.sessions_id}
         AND post_id         = ${post_id}
@@ -122,7 +121,7 @@ export abstract class ForumService {
     // get users location and their radius and make a WHERE in range {center} <= {post} <= {outward radius} returns * posts from forum_post
 
     const [post] = await db`
-        SELECT *
+        SELECT *, CONCAT(first_name, ' ', last_name) AS author
         FROM forum_post
         WHERE post_id = ${id} AND is_deleted = 0
         LIMIT 1`;
@@ -143,6 +142,7 @@ export abstract class ForumService {
     const posts = await db`
         SELECT
           fp.*,
+          CONCAT(fp.first_name, ' ', fp.last_name) AS author,
           ST_Distance_Sphere(fp.geo_point, ${session.geo_point}) * 0.000621371 AS distance_miles
         FROM forum_post fp
         WHERE fp.is_deleted = 0
@@ -157,7 +157,7 @@ export abstract class ForumService {
   // Get all comments for a given post
   static async getCommentsByPost(postId: number) {
     const comments = await db`
-      SELECT *
+      SELECT *, CONCAT(first_name, ' ', last_name) AS author
       FROM forum_comments
       WHERE post_id = ${postId}
       ORDER BY created_at ASC
@@ -169,7 +169,7 @@ export abstract class ForumService {
   // Need the postID or the userID
   static async getComment(id: number) {
     const [comment] = await db`
-        SELECT *
+        SELECT *, CONCAT(first_name, ' ', last_name) AS author
         FROM forum_comments
         WHERE comment_id = ${id}
         LIMIT 1`;
