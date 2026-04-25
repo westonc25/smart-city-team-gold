@@ -1,22 +1,17 @@
-/*
-  TEMPORARY MOCK DATA:
-
-  Used for frontend development before backend forum endpoints are connected.
-
-  BACKEND INTEGRATION:
-  Replace this file with real data fetched from the backend.
-*/
 import { ForumPost } from '@/types/forum';
+
+export const forumMockPosts: ForumPost[] = [];
+
+/*
 import { Image } from 'react-native';
 
-// image for streetlight outage post
 const streetlightImage = Image.resolveAssetSource(
   require('@/assets/images/forum/streetlight-outage.jpg')
 ).uri;
 
 export const forumMockPosts: ForumPost[] = [
   {
-     id: '1',
+    id: '1',
     author: 'Alex Johnson',
     title: 'Streetlight outage on Main St',
     content:
@@ -30,18 +25,22 @@ export const forumMockPosts: ForumPost[] = [
         author: 'Maya Chen',
         content: 'I noticed this too near the corner by the pharmacy.',
         createdAt: '1h ago',
+        upvotes: 0,
+        downvotes: 0,
+        userVote: null,
       },
       {
         id: 'c2',
         author: 'Jordan Smith',
         content: 'We should probably report it through the city office tomorrow.',
         createdAt: '45m ago',
+        upvotes: 0,
+        downvotes: 0,
+        userVote: null,
       },
     ],
-
     latitude: 36.8508,
     longitude: -76.2859,
-
     upvotes: 7,
     downvotes: 1,
     userVote: null,
@@ -60,12 +59,13 @@ export const forumMockPosts: ForumPost[] = [
         author: 'Alex Johnson',
         content: "I'll be there. Are gloves and trash bags provided?",
         createdAt: '3h ago',
+        upvotes: 0,
+        downvotes: 0,
+        userVote: null,
       },
     ],
-
     latitude: 36.8525,
     longitude: -76.2891,
-
     upvotes: 14,
     downvotes: 0,
     userVote: null,
@@ -79,12 +79,11 @@ export const forumMockPosts: ForumPost[] = [
     category: 'Question',
     createdAt: '1d ago',
     comments: [],
-
     latitude: 36.8468,
     longitude: -76.2920,
-
     upvotes: 3,
     downvotes: 2,
     userVote: null,
   },
 ];
+*/

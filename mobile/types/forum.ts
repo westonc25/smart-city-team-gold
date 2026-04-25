@@ -14,6 +14,9 @@ export type ForumComment = {
   author: string;
   content: string;
   createdAt: string;
+  upvotes: number;
+  downvotes: number;
+  userVote: VoteDirection;
 };
 
 export type VoteDirection = 'up' | 'down' | null;

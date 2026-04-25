@@ -45,7 +45,7 @@ export abstract class ForumService {
 
    // Check that the post was created successfully
     const [row] = await db`
-        SELECT *
+        SELECT *, CONCAT(first_name, ' ', last_name) AS author, NULL AS user_vote
         FROM forum_post
         WHERE user_session_id = ${session.sessions_id}
         ORDER BY created_at DESC
@@ -98,9 +98,8 @@ export abstract class ForumService {
         ${user.last_name})
     `;
 
-    // Return the new comment row — name is already on it, no join needed
     const [comment] = await db`
-      SELECT *
+      SELECT *, CONCAT(first_name, ' ', last_name) AS author, NULL AS user_vote
       FROM forum_comments
       WHERE user_session_id = ${session.sessions_id}
         AND post_id         = ${post_id}
@@ -122,7 +121,7 @@ export abstract class ForumService {
     // get users location and their radius and make a WHERE in range {center} <= {post} <= {outward radius} returns * posts from forum_post
 
     const [post] = await db`
-        SELECT *
+        SELECT *, CONCAT(first_name, ' ', last_name) AS author, NULL AS user_vote
         FROM forum_post
         WHERE post_id = ${id} AND is_deleted = 0
         LIMIT 1`;
@@ -143,6 +142,8 @@ export abstract class ForumService {
     const posts = await db`
         SELECT
           fp.*,
+          CONCAT(fp.first_name, ' ', fp.last_name) AS author,
+          (SELECT direction FROM forum_post_votes WHERE post_id = fp.post_id AND user_id = ${session.user_id} LIMIT 1) AS user_vote,
           ST_Distance_Sphere(fp.geo_point, ${session.geo_point}) * 0.000621371 AS distance_miles
         FROM forum_post fp
         WHERE fp.is_deleted = 0
@@ -155,12 +156,17 @@ export abstract class ForumService {
   }
 
   // Get all comments for a given post
-  static async getCommentsByPost(postId: number) {
+  static async getCommentsByPost(postId: number, userId?: number) {
     const comments = await db`
-      SELECT *
-      FROM forum_comments
-      WHERE post_id = ${postId}
-      ORDER BY created_at ASC
+      SELECT *,
+        CONCAT(first_name, ' ', last_name) AS author,
+        ${userId
+          ? db`(SELECT direction FROM forum_comment_votes WHERE comment_id = fc.comment_id AND user_id = ${userId} LIMIT 1)`
+          : db`NULL`
+        } AS user_vote
+      FROM forum_comments fc
+      WHERE fc.post_id = ${postId}
+      ORDER BY fc.created_at ASC
     `;
     return comments;
   }
@@ -169,7 +175,7 @@ export abstract class ForumService {
   // Need the postID or the userID
   static async getComment(id: number) {
     const [comment] = await db`
-        SELECT *
+        SELECT *, CONCAT(first_name, ' ', last_name) AS author, NULL AS user_vote
         FROM forum_comments
         WHERE comment_id = ${id}
         LIMIT 1`;
@@ -219,5 +225,93 @@ export abstract class ForumService {
     WHERE comment_id = ${id}`;
 
     return { message: "Comment deleted successfully" };
+  }
+
+  static async votePost({ post_id, user_id, direction }: { post_id: number, user_id: number, direction: 'up' | 'down' | null }) {
+    const [existing] = await db`
+      SELECT direction FROM forum_post_votes
+      WHERE post_id = ${post_id} AND user_id = ${user_id}
+      LIMIT 1
+    `;
+
+    if (direction === null) {
+      if (existing) {
+        await db`DELETE FROM forum_post_votes WHERE post_id = ${post_id} AND user_id = ${user_id}`;
+        if (existing.direction === 'up') {
+          await db`UPDATE forum_post SET upvotes = GREATEST(upvotes - 1, 0) WHERE post_id = ${post_id}`;
+        } else {
+          await db`UPDATE forum_post SET downvotes = GREATEST(downvotes - 1, 0) WHERE post_id = ${post_id}`;
+        }
+      }
+    } else if (!existing) {
+      await db`INSERT INTO forum_post_votes (post_id, user_id, direction) VALUES (${post_id}, ${user_id}, ${direction})`;
+      if (direction === 'up') {
+        await db`UPDATE forum_post SET upvotes = upvotes + 1 WHERE post_id = ${post_id}`;
+      } else {
+        await db`UPDATE forum_post SET downvotes = downvotes + 1 WHERE post_id = ${post_id}`;
+      }
+    } else if (existing.direction !== direction) {
+      await db`UPDATE forum_post_votes SET direction = ${direction} WHERE post_id = ${post_id} AND user_id = ${user_id}`;
+      if (direction === 'up') {
+        await db`UPDATE forum_post SET upvotes = upvotes + 1, downvotes = GREATEST(downvotes - 1, 0) WHERE post_id = ${post_id}`;
+      } else {
+        await db`UPDATE forum_post SET downvotes = downvotes + 1, upvotes = GREATEST(upvotes - 1, 0) WHERE post_id = ${post_id}`;
+      }
+    }
+
+    const [post] = await db`SELECT upvotes, downvotes FROM forum_post WHERE post_id = ${post_id} LIMIT 1`;
+    const [userVoteRow] = await db`
+      SELECT direction FROM forum_post_votes WHERE post_id = ${post_id} AND user_id = ${user_id} LIMIT 1
+    `;
+
+    return {
+      upvotes: Number(post?.upvotes ?? 0),
+      downvotes: Number(post?.downvotes ?? 0),
+      userVote: (userVoteRow?.direction ?? null) as 'up' | 'down' | null,
+    };
+  }
+
+  static async voteComment({ comment_id, user_id, direction }: { comment_id: number, user_id: number, direction: 'up' | 'down' | null }) {
+    const [existing] = await db`
+      SELECT direction FROM forum_comment_votes
+      WHERE comment_id = ${comment_id} AND user_id = ${user_id}
+      LIMIT 1
+    `;
+
+    if (direction === null) {
+      if (existing) {
+        await db`DELETE FROM forum_comment_votes WHERE comment_id = ${comment_id} AND user_id = ${user_id}`;
+        if (existing.direction === 'up') {
+          await db`UPDATE forum_comments SET upvotes = GREATEST(upvotes - 1, 0) WHERE comment_id = ${comment_id}`;
+        } else {
+          await db`UPDATE forum_comments SET downvotes = GREATEST(downvotes - 1, 0) WHERE comment_id = ${comment_id}`;
+        }
+      }
+    } else if (!existing) {
+      await db`INSERT INTO forum_comment_votes (comment_id, user_id, direction) VALUES (${comment_id}, ${user_id}, ${direction})`;
+      if (direction === 'up') {
+        await db`UPDATE forum_comments SET upvotes = upvotes + 1 WHERE comment_id = ${comment_id}`;
+      } else {
+        await db`UPDATE forum_comments SET downvotes = downvotes + 1 WHERE comment_id = ${comment_id}`;
+      }
+    } else if (existing.direction !== direction) {
+      await db`UPDATE forum_comment_votes SET direction = ${direction} WHERE comment_id = ${comment_id} AND user_id = ${user_id}`;
+      if (direction === 'up') {
+        await db`UPDATE forum_comments SET upvotes = upvotes + 1, downvotes = GREATEST(downvotes - 1, 0) WHERE comment_id = ${comment_id}`;
+      } else {
+        await db`UPDATE forum_comments SET downvotes = downvotes + 1, upvotes = GREATEST(upvotes - 1, 0) WHERE comment_id = ${comment_id}`;
+      }
+    }
+
+    const [comment] = await db`SELECT upvotes, downvotes FROM forum_comments WHERE comment_id = ${comment_id} LIMIT 1`;
+    const [userVoteRow] = await db`
+      SELECT direction FROM forum_comment_votes WHERE comment_id = ${comment_id} AND user_id = ${user_id} LIMIT 1
+    `;
+
+    return {
+      upvotes: Number(comment?.upvotes ?? 0),
+      downvotes: Number(comment?.downvotes ?? 0),
+      userVote: (userVoteRow?.direction ?? null) as 'up' | 'down' | null,
+    };
   }
 }
