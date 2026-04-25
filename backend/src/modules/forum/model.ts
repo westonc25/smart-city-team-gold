@@ -15,10 +15,18 @@ export const ForumModel = {
         post_id: t.Number(),
         jti: t.String(),
         content: t.String(),
-    })
+    }),
+    votePost: t.Object({
+        direction: t.Nullable(t.Union([t.Literal('up'), t.Literal('down')])),
+    }),
+    voteComment: t.Object({
+        direction: t.Nullable(t.Union([t.Literal('up'), t.Literal('down')])),
+    }),
 } as const
 
 export namespace ForumModel {
-    export type createPost = UnwrapSchema<typeof ForumModel.createPost>
+    export type createPost    = UnwrapSchema<typeof ForumModel.createPost>
     export type createComment = UnwrapSchema<typeof ForumModel.createComment>
+    export type votePost      = UnwrapSchema<typeof ForumModel.votePost>
+    export type voteComment   = UnwrapSchema<typeof ForumModel.voteComment>
 }
