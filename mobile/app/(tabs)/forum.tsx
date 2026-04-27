@@ -8,7 +8,7 @@
 
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
@@ -17,8 +17,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { getForumPostsUrl } from '@/lib/api-config';
-import { normalizeForumPostList } from '@/lib/normalize-forum';
+import { normalizeForumPost, normalizeForumPostList } from '@/lib/normalize-forum';
+import { AuthService } from '@/services/auth';
+import { ForumService } from '@/services/forum';
 import { ForumPost } from '@/types/forum';
 
 const extractPostArray = (data: unknown): unknown[] => {
@@ -91,21 +92,14 @@ export default function ForumScreen() {
     return `${posts.length} posts`;
   }, [posts.length]);
 
+  // Fetches posts from the backend on screen load and populates ForumContext.
   useEffect(() => {
     const fetchPosts = async () => {
-      const url = getForumPostsUrl();
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.warn('Forum posts request failed:', response.status, url);
-          replacePosts([]);
-          return;
-        }
+        const token = await AuthService.getToken();
+        if (!token) return;
 
-        const data: unknown = await response.json();
-
-        console.log('FORUM DATA:', data);
-
+        const data: unknown = await ForumService.getPosts();
         const rawList = extractPostArray(data);
         const normalized = normalizeForumPostList(rawList);
         replacePosts(normalized);
@@ -118,17 +112,20 @@ export default function ForumScreen() {
     fetchPosts();
   }, [replacePosts]);
 
-  /*
-    CURRENT BEHAVIOR:
-    Adds a newly created post to shared forum state so it appears at the top
-    of the feed and is visible across forum screens.
-
-    BACKEND INTEGRATION:
-    This can later call a POST endpoint and store the saved post
-    returned by the backend.
-  */
-  const handleAddPost = (newPost: ForumPost) => {
-    addPost(newPost);
+  // Sends the new post to the backend, then adds the saved post to context.
+  // The backend attaches the user's current location using their session.
+  const handleAddPost = async (newPost: ForumPost) => {
+    try {
+      const data = await ForumService.createPost(
+        newPost.title,
+        newPost.content,
+        newPost.category
+      );
+      const savedPost = normalizeForumPost(data.post);
+      addPost(savedPost ?? newPost);
+    } catch (error: any) {
+      Alert.alert('Failed to create post', error.message);
+    }
   };
 
   return (

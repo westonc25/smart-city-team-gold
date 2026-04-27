@@ -38,6 +38,17 @@ export const auth = new Elysia({prefix: '/auth'})
         return { token }
     }, { body: AuthModel.loginBody })
 
+    // Check if the current token is still valid
+    .get('/validate', async ({ jwt, headers }) => {
+        const token = headers.authorization?.replace('Bearer ', '')
+        if (!token) throw status(401, 'Unauthorized')
+
+        const payload = await jwt.verify(token)
+        if (!payload?.jti) throw status(401, 'Invalid token')
+
+        return { valid: true }
+    })
+
     // Invalidate the session so the token can no longer be used
 
     .post('/logout', async ({ jwt, headers }) => {

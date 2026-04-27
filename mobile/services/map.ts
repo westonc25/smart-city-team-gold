@@ -26,23 +26,23 @@ export const MapService = {
     // Send the user location to the backend API
     async sendLocationToAPI(latitude: number, longitude: number): Promise<void> {
         const token = await AuthService.getToken();
-        // Verify token
         if (!token) return;
 
-        const res = await fetch(`${API_URL}/map/location`, {
+        await AuthService.authenticatedFetch(`${API_URL}/map/location`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ latitude, longitude, timestamp: new Date().toISOString() }),
         });
     },
 
     // Start the 10 minute interval for checking the user location
     startTracking(): void {
-        MapService.requestPermission().then(granted => {
+        MapService.requestPermission().then(async granted => {
             if (!granted) return;
+
+            // Send location immediately on startup
+            const { latitude, longitude } = await MapService.getCurrentLocation();
+            await MapService.sendLocationToAPI(latitude, longitude);
 
             intervalId = setInterval(async () => {
                 const { latitude, longitude } = await MapService.getCurrentLocation();

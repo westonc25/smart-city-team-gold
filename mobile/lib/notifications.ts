@@ -78,5 +78,5 @@ export function addNotificationResponseListener(
 export function removeNotificationListener(
   subscription: ExpoNotifications.Subscription
 ): void {
-  ExpoNotifications.removeNotificationSubscription(subscription);
+  subscription.remove();
 }

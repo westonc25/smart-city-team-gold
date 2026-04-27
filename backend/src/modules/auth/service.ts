@@ -82,7 +82,7 @@ export abstract class AuthService {
                 s.user_id,
                 cl.geo_point
             FROM sessions s
-            JOIN current_location cl ON s.location_id = cl.current_location_id
+            LEFT JOIN current_location cl ON s.location_id = cl.current_location_id
             WHERE s.jti = ${jti}
             AND s.expires_at > NOW()
     `;

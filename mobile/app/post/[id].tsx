@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   EmitterSubscription,
   Image,
   Keyboard,
@@ -17,6 +18,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
+import { ForumService } from '@/services/forum';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatMiles, haversineDistanceMiles } from '@/lib/distance';
 import { ForumComment } from '@/types/forum';
@@ -103,23 +105,30 @@ export default function PostDetailScreen() {
     };
   }, []);
 
-  const handleAddComment = () => {
+  // Sends the comment to the backend, then adds it to context on success.
+  const handleAddComment = async () => {
     const trimmed = commentText.trim();
     if (!trimmed || !post) return;
 
-    const newComment: ForumComment = {
-      id: Date.now().toString(),
-      author: 'Resident User',
-      content: trimmed,
-      createdAt: 'Just now',
-    };
-
-    addComment(post.id, newComment);
     setCommentText('');
 
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    try {
+      const data = await ForumService.createComment(post.id, trimmed);
+
+      const newComment: ForumComment = {
+        id: String(data.comment_id ?? Date.now()),
+        author: 'Resident User',
+        content: String(data.content ?? trimmed),
+        createdAt: String(data.created_at ?? 'Just now'),
+      };
+
+      addComment(post.id, newComment);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error: any) {
+      Alert.alert('Failed to post comment', error.message);
+    }
   };
 
   const handleInputFocus = () => {

@@ -21,6 +21,7 @@ export default function TabLayout() {
   return (
     <SafeAreaProvider>
       <Tabs
+        initialRouteName="map"
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
           headerShown: false,
