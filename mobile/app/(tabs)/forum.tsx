@@ -1,27 +1,45 @@
 /*
-  Current implementation uses local mock data so the UI can be
-  developed and tested before backend integration.
+  Loads posts from GET {API}/forum/posts (see lib/api-config: EXPO_PUBLIC_API_URL
+  or platform defaults). Normalizes the payload into ForumContext so the feed
+  and /post/[id] share the same data. Create-post remains client-side until POST exists.
 
-  Backend team will replace mock/local create post and add comment flows
-  with real API calls and forum data.
+  Also requests the device location so each forum card can display "X.X mi" distance.
 */
 
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import * as Location from 'expo-location';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
 import { ForumFeed } from '@/components/forum/ForumFeed';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { forumMockPosts } from '@/data/forumMockData';
+import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ForumComment, ForumPost } from '@/types/forum';
+import { normalizeForumPost, normalizeForumPostList } from '@/lib/normalize-forum';
+import { AuthService } from '@/services/auth';
+import { ForumService } from '@/services/forum';
+import { ForumPost } from '@/types/forum';
+
+const extractPostArray = (data: unknown): unknown[] => {
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'object' && data !== null && 'data' in data) {
+    const inner = (data as { data: unknown }).data;
+    if (Array.isArray(inner)) return inner;
+  }
+  if (typeof data === 'object' && data !== null && 'posts' in data) {
+    const inner = (data as { posts: unknown }).posts;
+    if (Array.isArray(inner)) return inner;
+  }
+  return [];
+};
 
 export default function ForumScreen() {
   const insets = useSafeAreaInsets();
+  const { posts, addPost, replacePosts } = useForum();
 
-  // Theme aware colors so the forum screen matches the rest of the app
   const accentColor = useThemeColor(
     { light: '#0a7ea4', dark: '#4FC3F7' },
     'tint'
@@ -35,18 +53,38 @@ export default function ForumScreen() {
     'text'
   );
 
-  /*
-    TEMPORARY FRONTEND STATE:
-    Posts currently come from local mock data so the forum UI can be tested
-    before backend forum endpoints are connected 
-
-    BACKEND INTEGRATION:
-    Replace the mock data source with posts fetched from the backend.
-  */
-  const [posts, setPosts] = useState<ForumPost[]>(forumMockPosts);
-
   // Controls the visibility of the create post bottom sheet.
   const [modalVisible, setModalVisible] = useState(false);
+
+  // ---------- User location for "miles from you" ----------
+  const [userLat, setUserLat] = useState<number | undefined>(undefined);
+  const [userLon, setUserLon] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        if (!cancelled) {
+          setUserLat(loc.coords.latitude);
+          setUserLon(loc.coords.longitude);
+        }
+      } catch (err) {
+        console.warn('Could not get user location for distance display:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Label shown under the page title.
   const postCountText = useMemo(() => {
@@ -55,45 +93,42 @@ export default function ForumScreen() {
     return `${posts.length} posts`;
   }, [posts.length]);
 
-  /*
-    CURRENT BEHAVIOR:
-    Adds a newly created post to local state so it appears at the top of the feed.
+  // Fetches posts from the backend when the screen is focused (e.g., tab switch).
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchPosts = async () => {
+        try {
+          const token = await AuthService.getToken();
+          if (!token) return;
 
-    BACKEND INTEGRATION:
-    This should eventually call a POST endpoint and use the saved post
-    returned by the backend.
-  */
-  const handleAddPost = (newPost: ForumPost) => {
-    setPosts((prev) => [newPost, ...prev]);
-  };
+          const data: unknown = await ForumService.getPosts();
+          const rawList = extractPostArray(data);
+          const normalized = normalizeForumPostList(rawList);
+          replacePosts(normalized);
+        } catch (error) {
+          console.error('Failed to fetch posts:', error);
+          replacePosts([]);
+        }
+      };
 
-  /*
-    CURRENT BEHAVIOR:
-    Creates a local comment object and appends it to the matching post
+      fetchPosts();
+    }, [replacePosts])
+  );
 
-    BACKEND INTEGRATION:
-    Replace with API call to create/store a comment for the given post id.
-    The backend should return the real comment id, author, and timestamp  
-    (or however yall set it up) )
-  */
-  const handleAddComment = (postId: string, commentText: string) => {
-    const newComment: ForumComment = {
-      id: Date.now().toString(),
-      author: 'Resident User',
-      content: commentText,
-      createdAt: 'Just now',
-    };
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [...(post.comments ?? []), newComment],
-            }
-          : post
-      )
-    );
+  // Sends the new post to the backend, then adds the saved post to context.
+  // The backend attaches the user's current location using their session.
+  const handleAddPost = async (newPost: ForumPost) => {
+    try {
+      const data = await ForumService.createPost(
+        newPost.title,
+        newPost.content,
+        newPost.category
+      );
+      const savedPost = normalizeForumPost(data.post);
+      addPost(savedPost ?? newPost);
+    } catch (error: any) {
+      Alert.alert('Failed to create post', error.message);
+    }
   };
 
   return (
@@ -133,14 +168,9 @@ export default function ForumScreen() {
           </Pressable>
         </View>
       ) : (
-        /*
-          ForumFeed is separated from the screen so feed rendering is easier to 
-          replace/update when we add the backend data 
-        */
-        <ForumFeed posts={posts} onAddComment={handleAddComment} />
+        <ForumFeed posts={posts} userLat={userLat} userLon={userLon} />
       )}
 
-      {/* Create post UI is in its own component for easier maintenance. */}
       <CreatePostModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}

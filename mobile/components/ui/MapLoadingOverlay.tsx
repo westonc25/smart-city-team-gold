@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Animated, StyleSheet, View } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface MapLoadingOverlayProps {
@@ -24,7 +23,7 @@ export function MapLoadingOverlay({ visible, message = 'Loading map…' }: MapLo
         } else {
             opacity.setValue(1);
         }
-    }, [visible]);
+    }, [visible, opacity]);
 
     if (!visible) return null;
 
