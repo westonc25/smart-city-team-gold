@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -28,7 +28,7 @@ export default function PostDetailScreen() {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const { posts, addComment, votePost } = useForum();
+  const { posts, addComment, setComments, votePost } = useForum();
   const post = posts.find((p) => p.id === id);
 
   const [commentText, setCommentText] = useState('');
@@ -70,6 +70,26 @@ export default function PostDetailScreen() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!id) return;
+    ForumService.getComments(id)
+      .then((data: any) => {
+        const normalized: ForumComment[] = (Array.isArray(data) ? data : [])
+          .map((c: any) => ({
+            id: String(c.comment_id ?? c.id ?? ''),
+            author: c.author ?? (`${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Unknown'),
+            content: String(c.content ?? ''),
+            createdAt: String(c.created_at ?? c.createdAt ?? ''),
+            upvotes: Number(c.upvotes ?? 0),
+            downvotes: Number(c.downvotes ?? 0),
+            userVote: (c.user_vote === 'up' || c.user_vote === 'down' ? c.user_vote : null),
+          }))
+          .filter((c: ForumComment) => c.content);
+        setComments(id, normalized);
+      })
+      .catch((e) => console.error('Failed to load comments:', e));
+  }, [id]);
 
   useEffect(() => {
     let showSub: EmitterSubscription;
@@ -117,9 +137,12 @@ export default function PostDetailScreen() {
 
       const newComment: ForumComment = {
         id: String(data.comment_id ?? Date.now()),
-        author: 'Resident User',
+        author: String(data.author ?? data.first_name ?? 'Unknown'),
         content: String(data.content ?? trimmed),
         createdAt: String(data.created_at ?? 'Just now'),
+        upvotes: 0,
+        downvotes: 0,
+        userVote: null,
       };
 
       addComment(post.id, newComment);
@@ -159,6 +182,7 @@ export default function PostDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen options={{ headerShown: false }} />
       <ThemedView style={styles.container}>
         <View style={styles.headerBar}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>

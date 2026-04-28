@@ -15,6 +15,8 @@ type ForumContextType = {
   addComment: (postId: string, comment: ForumComment) => void;
   /** Replaces the in-memory list (e.g. after GET /forum/posts) so feed and post detail stay in sync. */
   replacePosts: (posts: ForumPost[]) => void;
+  /** Loads the full comment list for a post into context (e.g. after GET /forum/posts/:id/comments). */
+  setComments: (postId: string, comments: ForumComment[]) => void;
   /** Toggle the current user's vote on a post. Tapping the same direction again removes the vote. */
   votePost: (postId: string, direction: VoteDirection) => void;
 };
@@ -40,6 +42,14 @@ export function ForumProvider({ children }: { children: ReactNode }) {
 
   const replacePosts = useCallback((next: ForumPost[]) => {
     setPosts(next);
+  }, []);
+
+  const setComments = useCallback((postId: string, comments: ForumComment[]) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, comments } : post
+      )
+    );
   }, []);
 
   /**
@@ -84,7 +94,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ForumContext.Provider value={{ posts, addPost, addComment, replacePosts, votePost }}>
+    <ForumContext.Provider value={{ posts, addPost, addComment, replacePosts, setComments, votePost }}>
       {children}
     </ForumContext.Provider>
   );

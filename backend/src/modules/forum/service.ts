@@ -172,19 +172,15 @@ export abstract class ForumService {
   }
 
   // Get all comments for a given post
-  static async getCommentsByPost(postId: number, userId?: number) {
-    const comments = await db`
+  static async getCommentsByPost(postId: number, _userId?: number) {
+    return db`
       SELECT *,
         CONCAT(first_name, ' ', last_name) AS author,
-        ${userId
-          ? db`(SELECT direction FROM forum_comment_votes WHERE comment_id = fc.comment_id AND user_id = ${userId} LIMIT 1)`
-          : db`NULL`
-        } AS user_vote
-      FROM forum_comments fc
-      WHERE fc.post_id = ${postId}
-      ORDER BY fc.created_at ASC
+        NULL AS user_vote
+      FROM forum_comments
+      WHERE post_id = ${postId}
+      ORDER BY created_at ASC
     `;
-    return comments;
   }
 
   // Catch all for comment search parameters
