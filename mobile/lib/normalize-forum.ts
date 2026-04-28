@@ -75,6 +75,14 @@ export const normalizeForumPost = (raw: unknown): ForumPost | null => {
         .filter((c): c is NonNullable<typeof c> => c !== null)
     : undefined;
 
+  const commentCountRaw = raw.comment_count ?? raw.commentCount;
+  const commentCount =
+    typeof commentCountRaw === 'number' && Number.isFinite(commentCountRaw)
+      ? commentCountRaw
+      : typeof commentCountRaw === 'string'
+      ? parseInt(commentCountRaw, 10) || 0
+      : 0;
+
   // Voting fields — default to zero / no vote when not provided by the backend.
   const upvotesRaw = raw.upvotes ?? raw.up_votes ?? raw.likes;
   const downvotesRaw = raw.downvotes ?? raw.down_votes ?? raw.dislikes;
@@ -95,6 +103,7 @@ export const normalizeForumPost = (raw: unknown): ForumPost | null => {
     category: toForumCategory(categoryRaw),
     createdAt,
     comments: comments && comments.length > 0 ? comments : undefined,
+    commentCount,
     latitude,
     longitude,
     upvotes,

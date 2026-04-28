@@ -141,7 +141,9 @@ export abstract class ForumService {
     // If no location is set yet, return all posts ordered by recency
     if (!session.geo_point) {
       const posts = await db`
-        SELECT fp.*, NULL AS distance_miles
+        SELECT fp.*,
+          NULL AS distance_miles,
+          (SELECT COUNT(*) FROM forum_comments fc WHERE fc.post_id = fp.post_id AND (fc.is_deleted IS NULL OR fc.is_deleted = 0)) AS comment_count
         FROM forum_post fp
         WHERE fp.is_deleted = 0
         ORDER BY fp.created_at DESC
@@ -157,7 +159,8 @@ export abstract class ForumService {
           fp.*,
           CONCAT(fp.first_name, ' ', fp.last_name) AS author,
           (SELECT direction FROM forum_post_votes WHERE post_id = fp.post_id AND user_id = ${session.user_id} LIMIT 1) AS user_vote,
-          ST_Distance_Sphere(fp.geo_point, cl.geo_point) / 1609.344 AS distance_miles
+          ST_Distance_Sphere(fp.geo_point, cl.geo_point) / 1609.344 AS distance_miles,
+          (SELECT COUNT(*) FROM forum_comments fc WHERE fc.post_id = fp.post_id AND (fc.is_deleted IS NULL OR fc.is_deleted = 0)) AS comment_count
         FROM forum_post fp
         JOIN sessions s ON s.sessions_id = ${session.sessions_id}
         JOIN current_location cl ON cl.current_location_id = s.location_id

@@ -31,7 +31,7 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
   const badgeBg = useThemeColor({ light: '#eaf6fb', dark: '#12303b' }, 'background');
   const accentColor = useThemeColor({ light: '#0a7ea4', dark: '#4FC3F7' }, 'tint');
 
-  const commentCount = post.comments?.length ?? 0;
+  const commentCount = post.commentCount ?? 0;
   const netVotes = post.upvotes - post.downvotes;
 
   const distanceLabel =

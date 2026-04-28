@@ -38,6 +38,8 @@ export type ForumPost = {
   latitude?: number;
   longitude?: number;
 
+  commentCount: number;
+
   // Voting — tracks community engagement on each post.
   upvotes: number;
   downvotes: number;
