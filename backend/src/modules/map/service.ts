@@ -8,24 +8,24 @@ export abstract class MapService {
     // Insert or update the current location for the active session.
     // - If the user has an active session, update the location.
     // - If the user does not have an active session, create a new session with the location.
-    static async updateLocation(userId: string, latitude: number, longitude: number, timestamp: string){
-        
+    static async updateLocation(jti: string, latitude: number, longitude: number, timestamp: string){
+
         // Convert the timestamp string to a Date object for the DB
         const locationTimestamp = new Date(timestamp);
         if (isNaN(locationTimestamp.getTime())) throw new Error("Invalid timestamp");
 
         // Get the current session for the user from the sessions table
         const [session] = await db`
-            SELECT sessions_id, location_id
+            SELECT sessions_id, location_id, user_id
             FROM sessions
-            WHERE user_id = ${Number(userId)}
-            ORDER BY created_at DESC
+            WHERE jti = ${jti}
+            AND expires_at > NOW()
             LIMIT 1
         `;
         if (!session) throw new Error("No active session found for user");
 
         // Turn the latitude and longitude into a point variable
-        const pointWKT = `POINT(${longitude} ${latitude})`;
+        const pointWKT = `POINT(${latitude} ${longitude})`;
 
         // Check for current location already existing
         const [existing] = await db`
@@ -57,7 +57,7 @@ export abstract class MapService {
                 INSERT INTO current_location (session_id, user_id, geo_point, created_at)
                 VALUES (
                     ${session.sessions_id},
-                    ${Number(userId)},
+                    ${session.user_id},
                     ST_GeomFromText(${pointWKT}, 4326),
                     ${locationTimestamp}
                 )

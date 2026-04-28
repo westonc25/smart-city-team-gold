@@ -7,5 +7,5 @@ export const map = new Elysia({prefix: '/map'})
     .use(authMiddleware)
 
     .post('/location', ({ body, user }) => {
-        return MapService.updateLocation(user.jti, body.latitude, body.longitude)
+        return MapService.updateLocation(user.jti, body.latitude, body.longitude, body.timestamp)
     }, { body: MapModel.locationBody })

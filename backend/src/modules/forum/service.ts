@@ -149,16 +149,21 @@ export abstract class ForumService {
       return posts;
     }
 
-    // get forum posts within 15 miles of the user
+    // Join directly to current_location so MySQL handles the geo_point as a
+    // native geometry column — avoids passing the binary buffer through the
+    // application layer where the driver may serialize it as a plain BLOB
     const posts = await db`
         SELECT
           fp.*,
           CONCAT(fp.first_name, ' ', fp.last_name) AS author,
           (SELECT direction FROM forum_post_votes WHERE post_id = fp.post_id AND user_id = ${session.user_id} LIMIT 1) AS user_vote,
-          ST_Distance_Sphere(fp.geo_point, ${session.geo_point}) * 0.000621371 AS distance_miles
+          ST_Distance_Sphere(fp.geo_point, cl.geo_point) / 1609.344 AS distance_miles
         FROM forum_post fp
+        JOIN sessions s ON s.sessions_id = ${session.sessions_id}
+        JOIN current_location cl ON cl.current_location_id = s.location_id
         WHERE fp.is_deleted = 0
-        AND ST_Distance(fp.geo_point, ${session.geo_point}) <= 24140.2
+          AND fp.geo_point IS NOT NULL
+          AND ST_Distance_Sphere(fp.geo_point, cl.geo_point) <= 15 * 1609.344
         ORDER BY fp.created_at DESC
         `;
 
