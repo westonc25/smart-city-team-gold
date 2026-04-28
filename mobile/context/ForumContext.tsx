@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { ForumPost, ForumComment, VoteDirection } from '@/types/forum';
 import { forumMockPosts } from '@/data/forumMockData';
+import { ForumService } from '@/services/forum';
 
 type ForumContextType = {
   posts: ForumPost[];
@@ -53,25 +54,31 @@ export function ForumProvider({ children }: { children: ReactNode }) {
    */
   const votePost = useCallback(
     (postId: string, direction: VoteDirection) => {
-      setPosts((prev) =>
-        prev.map((post) => {
+      let newVote: VoteDirection = direction;
+      let snapshot: ForumPost[] | null = null;
+
+      setPosts((prev) => {
+        snapshot = prev;
+        return prev.map((post) => {
           if (post.id !== postId) return post;
 
           const prevVote = post.userVote;
           let { upvotes, downvotes } = post;
 
-          // Undo previous vote
           if (prevVote === 'up') upvotes -= 1;
           if (prevVote === 'down') downvotes -= 1;
 
-          // Apply new vote (if tapping the same direction, just remove)
-          const newVote: VoteDirection = prevVote === direction ? null : direction;
+          newVote = prevVote === direction ? null : direction;
           if (newVote === 'up') upvotes += 1;
           if (newVote === 'down') downvotes += 1;
 
           return { ...post, upvotes, downvotes, userVote: newVote };
-        }),
-      );
+        });
+      });
+
+      ForumService.votePost(postId, newVote).catch(() => {
+        if (snapshot) setPosts(snapshot);
+      });
     },
     [],
   );
