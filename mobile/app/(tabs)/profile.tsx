@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -17,11 +18,9 @@ import { ProfilePostHistory } from '@/components/profile/ProfilePostHistory';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import {
-  mockUserPosts,
-  mockUserProfile,
-  ProfileFormData,
-} from '@/data/profileMockData';
+import { mockUserPosts, ProfileFormData } from '@/data/profileMockData';
+import { AuthService } from '@/services/auth';
+import { UserService, UpdateUserData } from '@/services/users';
 import { useNotifications } from '@/context/NotificationContext';
 
 export default function ProfileScreen() {
@@ -29,27 +28,48 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null); // extracted from JWT on load
 
-  // Frontend only local state for profile management.
-  // Backend team can replace this with fetched user profile data
-  const [formData, setFormData] = useState<ProfileFormData>(mockUserProfile);
+  // Empty starting state before real profile data is fetched
+  const emptyProfile: ProfileFormData = {
+    name: '',
+    email: '',
+    password: '',
+    notificationsEnabled: false,
+    profileImageUri: null,
+  };
 
-  // Stores the last saved profile state so Save/Cancel works
-  // Backend integration can update this after a successful profile save request
-  const [savedData, setSavedData] = useState<ProfileFormData>(mockUserProfile);
-
-  // Frontend placeholder for authenticated user's post history.
-  // Replace with real backend fetched post history later.
+  const [formData, setFormData] = useState<ProfileFormData>(emptyProfile);
+  const [savedData, setSavedData] = useState<ProfileFormData>(emptyProfile); // tracks last saved state for Cancel
   const [userPosts] = useState(mockUserPosts);
 
+  // Decode the JWT to get the user ID, then fetch the real profile from the backend.
+  // Password starts empty so the backend never returns plaintext, only a hash.
   useEffect(() => {
-    // Simulated loading state
-    // Replace with actual profile fetch request when backend is ready.
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 900);
-
-    return () => clearTimeout(timer);
+    const loadProfile = async () => {
+      try {
+        const token = await AuthService.getToken();
+        if (!token) return;
+        const id = UserService.getUserIdFromToken(token);
+        if (!id) return;
+        setUserId(id);
+        const user = await UserService.getUser(id);
+        const profileData: ProfileFormData = {
+          name: `${user.first_name} ${user.last_name}`.trim(),
+          email: user.email,
+          password: '',
+          notificationsEnabled: permissionGranted,
+          profileImageUri: user.profile_picture,
+        };
+        setFormData(profileData);
+        setSavedData(profileData);
+      } catch {
+        Alert.alert('Error', 'Failed to load profile.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProfile();
   }, []);
 
   const hasUnsavedChanges = useMemo(() => {
@@ -75,26 +95,52 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleSaveProfile = () => {
-    // Replace this local save simulation with a real one
-    setSavedData(formData);
-
-    Alert.alert(
-      'Profile Updated',
-      'Your profile changes have been saved locally for now.'
-    );
+  const handleSaveProfile = async () => {
+    if (!userId) return;
+    // Split the single name field back into first/last for the backend
+    const nameParts = formData.name.trim().split(' ');
+    const updateData: UpdateUserData = {
+      first_name: nameParts[0] || '',
+      last_name: nameParts.slice(1).join(' ') || '',
+      email: formData.email,
+      ...(formData.password ? { password: formData.password } : {}), // only send password if user typed one
+    };
+    try {
+      await UserService.updateUser(userId, updateData);
+      const updated = { ...formData, password: '' };
+      setSavedData(updated);
+      setFormData(updated);
+      Alert.alert('Profile Updated', 'Your profile has been saved.');
+    } catch {
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
+    }
   };
 
   const handleCancelChanges = () => {
     setFormData(savedData);
   };
 
-  const handleChangePassword = () => {
-    // Replace this placeholder with backend logic
-    Alert.alert(
-      'Password Update',
-      'Password update flow will be connected to backend authentication later.'
-    );
+  // Added to handle a user logging out from the app. 
+  const handleLogout = async () => {
+    await AuthService.logout();
+    router.replace('/login');
+  };
+
+  // Sends only the password field and leaves all other profile fields untouched
+  const handleChangePassword = async () => {
+    if (!userId || !formData.password) {
+      Alert.alert('Update Password', 'Enter a new password in the field above, then tap Update Password.');
+      return;
+    }
+    try {
+      await UserService.updateUser(userId, { password: formData.password });
+      const updated = { ...formData, password: '' };
+      setSavedData(updated);
+      setFormData(updated);
+      Alert.alert('Password Updated', 'Your password has been changed.');
+    } catch {
+      Alert.alert('Error', 'Failed to update password. Please try again.');
+    }
   };
 
   if (isLoading) {
@@ -233,6 +279,10 @@ export default function ProfileScreen() {
           </View>
 
           <ProfilePostHistory posts={userPosts} />
+
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -372,5 +422,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#11181C',
+  },
+  logoutButton: {
+    minHeight: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 59, 48, 0.05)',
+  },
+  logoutButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FF3B30',
   },
 });
