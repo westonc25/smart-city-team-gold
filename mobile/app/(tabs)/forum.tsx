@@ -7,9 +7,10 @@
 */
 
 import * as Location from 'expo-location';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { CreatePostModal } from '@/components/forum/CreatePostModal';
 import { ForumFeed } from '@/components/forum/ForumFeed';
@@ -92,25 +93,27 @@ export default function ForumScreen() {
     return `${posts.length} posts`;
   }, [posts.length]);
 
-  // Fetches posts from the backend on screen load and populates ForumContext.
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const token = await AuthService.getToken();
-        if (!token) return;
+  // Fetches posts from the backend when the screen is focused (e.g., tab switch).
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchPosts = async () => {
+        try {
+          const token = await AuthService.getToken();
+          if (!token) return;
 
-        const data: unknown = await ForumService.getPosts();
-        const rawList = extractPostArray(data);
-        const normalized = normalizeForumPostList(rawList);
-        replacePosts(normalized);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-        replacePosts([]);
-      }
-    };
+          const data: unknown = await ForumService.getPosts();
+          const rawList = extractPostArray(data);
+          const normalized = normalizeForumPostList(rawList);
+          replacePosts(normalized);
+        } catch (error) {
+          console.error('Failed to fetch posts:', error);
+          replacePosts([]);
+        }
+      };
 
-    fetchPosts();
-  }, [replacePosts]);
+      fetchPosts();
+    }, [replacePosts])
+  );
 
   // Sends the new post to the backend, then adds the saved post to context.
   // The backend attaches the user's current location using their session.

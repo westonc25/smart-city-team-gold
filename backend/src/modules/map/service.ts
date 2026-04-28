@@ -25,7 +25,7 @@ export abstract class MapService {
         if (!session) throw new Error("No active session found for user");
 
         // Turn the latitude and longitude into a point variable
-        const pointWKT = `POINT(${latitude} ${longitude})`;
+        const pointWKT = `POINT(${longitude} ${latitude})`;
 
         // Check for current location already existing
         const [existing] = await db`
