@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -117,6 +118,12 @@ export default function ProfileScreen() {
 
   const handleCancelChanges = () => {
     setFormData(savedData);
+  };
+
+  // Added to handle a user logging out from the app. 
+  const handleLogout = async () => {
+    await AuthService.logout();
+    router.replace('/login');
   };
 
   // Sends only the password field and leaves all other profile fields untouched
@@ -272,6 +279,10 @@ export default function ProfileScreen() {
           </View>
 
           <ProfilePostHistory posts={userPosts} />
+
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -411,5 +422,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#11181C',
+  },
+  logoutButton: {
+    minHeight: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 59, 48, 0.05)',
+  },
+  logoutButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FF3B30',
   },
 });
