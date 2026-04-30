@@ -8,15 +8,16 @@ const trimTrailingSlashes = (value: string): string => value.replace(/\/+$/, '')
  * If unset: Android emulator defaults to host loopback via 10.0.2.2; other platforms use 127.0.0.1.
  */
 export const getApiBaseUrl = (): string => {
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  const fromEnv =
+    Platform.OS === 'android'
+      ? process.env.EXPO_PUBLIC_API_URL_ANDROID
+      : process.env.EXPO_PUBLIC_API_URL_IOS;
+
   if (typeof fromEnv === 'string' && fromEnv.trim().length > 0) {
     return trimTrailingSlashes(fromEnv.trim());
   }
 
-  const fallback =
-    Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://127.0.0.1:3000';
-
-  return fallback;
+  return Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://127.0.0.1:3000';
 };
 
 export const getForumPostsUrl = (): string => `${getApiBaseUrl()}/forum/posts`;
