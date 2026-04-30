@@ -23,6 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: 'com.anonymous.mobile',
     softwareKeyboardLayoutMode: 'resize',
+    usesCleartextTraffic: true,
     permissions: [
       'android.permission.ACCESS_COARSE_LOCATION',
       'android.permission.ACCESS_FINE_LOCATION',

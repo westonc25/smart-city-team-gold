@@ -16,6 +16,6 @@ const app = new Elysia()
   .use(forum)
   .use(map)
 
-  .listen(3000);
+  .listen({ port: 3000, hostname: '0.0.0.0' });
 
 console.log(` SmartCity server is running at ${app.server?.hostname}:${app.server?.port}`);
