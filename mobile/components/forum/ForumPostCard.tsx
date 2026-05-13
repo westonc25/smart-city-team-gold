@@ -10,6 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useForum } from '@/context/ForumContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatMiles, haversineDistanceMiles } from '@/lib/distance';
+import { formatRelativeDate } from '@/lib/format-date';
 import { ForumPost } from '@/types/forum';
 import { useRouter } from 'expo-router';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
@@ -63,7 +64,7 @@ export function ForumPostCard({ post, userLat, userLon }: ForumPostCardProps) {
               </ThemedText>
             )}
             <ThemedText style={[styles.timeText, { color: mutedTextColor }]}>
-              {post.createdAt}
+              {formatRelativeDate(post.createdAt)}
             </ThemedText>
           </View>
         </View>

@@ -142,9 +142,16 @@ export abstract class ForumService {
     if (!session.geo_point) {
       const posts = await db`
         SELECT fp.*,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(COALESCE(fp.first_name, ''), ' ', COALESCE(fp.last_name, ''))), ''),
+            CONCAT(u.first_name, ' ', u.last_name)
+          ) AS author,
+          NULL AS user_vote,
           NULL AS distance_miles,
           (SELECT COUNT(*) FROM forum_comments fc WHERE fc.post_id = fp.post_id AND (fc.is_deleted IS NULL OR fc.is_deleted = 0)) AS comment_count
         FROM forum_post fp
+        LEFT JOIN sessions fp_s ON fp_s.sessions_id = fp.user_session_id
+        LEFT JOIN users u ON u.userID = fp_s.user_id
         WHERE fp.is_deleted = 0
         ORDER BY fp.created_at DESC
       `;
@@ -157,11 +164,16 @@ export abstract class ForumService {
     const posts = await db`
         SELECT
           fp.*,
-          CONCAT(fp.first_name, ' ', fp.last_name) AS author,
+          COALESCE(
+            NULLIF(TRIM(CONCAT(COALESCE(fp.first_name, ''), ' ', COALESCE(fp.last_name, ''))), ''),
+            CONCAT(u.first_name, ' ', u.last_name)
+          ) AS author,
           (SELECT direction FROM forum_post_votes WHERE post_id = fp.post_id AND user_id = ${session.user_id} LIMIT 1) AS user_vote,
           ST_Distance_Sphere(fp.geo_point, cl.geo_point) / 1609.344 AS distance_miles,
           (SELECT COUNT(*) FROM forum_comments fc WHERE fc.post_id = fp.post_id AND (fc.is_deleted IS NULL OR fc.is_deleted = 0)) AS comment_count
         FROM forum_post fp
+        LEFT JOIN sessions fp_s ON fp_s.sessions_id = fp.user_session_id
+        LEFT JOIN users u ON u.userID = fp_s.user_id
         JOIN sessions s ON s.sessions_id = ${session.sessions_id}
         JOIN current_location cl ON cl.current_location_id = s.location_id
         WHERE fp.is_deleted = 0
@@ -177,12 +189,17 @@ export abstract class ForumService {
   // Get all comments for a given post
   static async getCommentsByPost(postId: number, _userId?: number) {
     return db`
-      SELECT *,
-        CONCAT(first_name, ' ', last_name) AS author,
+      SELECT fc.*,
+        COALESCE(
+          NULLIF(TRIM(CONCAT(COALESCE(fc.first_name, ''), ' ', COALESCE(fc.last_name, ''))), ''),
+          CONCAT(u.first_name, ' ', u.last_name)
+        ) AS author,
         NULL AS user_vote
-      FROM forum_comments
-      WHERE post_id = ${postId}
-      ORDER BY created_at ASC
+      FROM forum_comments fc
+      LEFT JOIN sessions s ON s.sessions_id = fc.user_session_id
+      LEFT JOIN users u ON u.userID = s.user_id
+      WHERE fc.post_id = ${postId}
+      ORDER BY fc.created_at ASC
     `;
   }
 

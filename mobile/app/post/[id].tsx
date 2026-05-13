@@ -21,6 +21,7 @@ import { useForum } from '@/context/ForumContext';
 import { ForumService } from '@/services/forum';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatMiles, haversineDistanceMiles } from '@/lib/distance';
+import { formatRelativeDate } from '@/lib/format-date';
 import { ForumComment } from '@/types/forum';
 
 export default function PostDetailScreen() {
@@ -80,7 +81,7 @@ export default function PostDetailScreen() {
             id: String(c.comment_id ?? c.id ?? ''),
             author: c.author ?? (`${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Unknown'),
             content: String(c.content ?? ''),
-            createdAt: String(c.created_at ?? c.createdAt ?? ''),
+            createdAt: c.created_at instanceof Date ? c.created_at.toISOString() : String(c.created_at ?? c.createdAt ?? ''),
             upvotes: Number(c.upvotes ?? 0),
             downvotes: Number(c.downvotes ?? 0),
             userVote: (c.user_vote === 'up' || c.user_vote === 'down' ? c.user_vote : null),
@@ -139,7 +140,7 @@ export default function PostDetailScreen() {
         id: String(data.comment_id ?? Date.now()),
         author: String(data.author ?? data.first_name ?? 'Unknown'),
         content: String(data.content ?? trimmed),
-        createdAt: String(data.created_at ?? 'Just now'),
+        createdAt: data.created_at instanceof Date ? data.created_at.toISOString() : String(data.created_at ?? new Date().toISOString()),
         upvotes: 0,
         downvotes: 0,
         userVote: null,
@@ -222,7 +223,7 @@ export default function PostDetailScreen() {
                   </ThemedText>
                 )}
                 <ThemedText style={[styles.timeText, { color: mutedTextColor }]}>
-                  {post.createdAt}
+                  {formatRelativeDate(post.createdAt)}
                 </ThemedText>
               </View>
             </View>
@@ -292,7 +293,7 @@ export default function PostDetailScreen() {
                   <ThemedText style={styles.commentAuthor}>{comment.author}</ThemedText>
                   <ThemedText style={styles.commentContent}>{comment.content}</ThemedText>
                   <ThemedText style={[styles.commentTime, { color: mutedTextColor }]}>
-                    {comment.createdAt}
+                    {formatRelativeDate(comment.createdAt)}
                   </ThemedText>
                 </View>
               ))

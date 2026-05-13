@@ -22,6 +22,7 @@ if (!process.env.EXPO_PUBLIC_MAPBOX_TOKEN) {
 export default function MapScreen() {
   const cameraRef = useRef<Mapbox.Camera>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const userLocationRef = useRef<[number, number] | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -85,6 +86,10 @@ export default function MapScreen() {
     // Run once on mount; centerOnUser changes when isLocating toggles and must not retrigger here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    userLocationRef.current = userLocation;
+  }, [userLocation]);
 
   const handleMapReady = useCallback(() => {
     setIsMapReady(true);
@@ -161,13 +166,14 @@ export default function MapScreen() {
     Math.round(seconds / 60) + " min";
 
   const fetchRoute = useCallback(async () => {
-    if (!userLocation || !destination) return;
+    const currentLocation = userLocationRef.current;
+    if (!currentLocation || !destination) return;
 
     setIsRouting(true);
 
     try {
-      const userLongitude = userLocation[0];
-      const userLatitude = userLocation[1];
+      const userLongitude = currentLocation[0];
+      const userLatitude = currentLocation[1];
       const destLongitude = destination[0];
       const destLatitude = destination[1];
 
@@ -232,12 +238,12 @@ export default function MapScreen() {
     }
 
     setIsRouting(false);
-  }, [userLocation, destination]);
+  }, [destination]);
 
   useEffect(() => {
-    if (!userLocation || !destination) return;
+    if (!destination) return;
     void fetchRoute();
-  }, [userLocation, destination, fetchRoute]);
+  }, [destination, fetchRoute]);
 
   useEffect(() => {
     if (!userLocation || steps.length === 0) return;

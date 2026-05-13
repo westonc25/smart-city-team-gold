@@ -26,6 +26,9 @@ const pickString = (obj: UnknownRecord, ...keys: string[]): string | undefined =
     if (typeof v === 'number' && Number.isFinite(v)) {
       return String(v);
     }
+    if (v instanceof Date && !isNaN(v.getTime())) {
+      return v.toISOString();
+    }
   }
   return undefined;
 };
@@ -39,10 +42,21 @@ export const normalizeForumPost = (raw: unknown): ForumPost | null => {
   const id = pickString(raw, 'id', 'post_id', 'postId');
   const title = pickString(raw, 'title');
   const content = pickString(raw, 'content', 'body', 'text');
-  const author = pickString(raw, 'author', 'username', 'user_name', 'displayName') ?? 'Unknown';
+  const authorField = pickString(raw, 'author', 'username', 'user_name', 'displayName');
+  const nameParts = [raw.first_name, raw.last_name]
+    .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+    .join(' ');
+  const author = authorField?.trim() || nameParts || 'Unknown';
+
   const categoryRaw = pickString(raw, 'category', 'tag') ?? 'General';
+
+  const createdAtRaw = raw.createdAt ?? raw.created_at ?? raw.timestamp;
   const createdAt =
-    pickString(raw, 'createdAt', 'created_at', 'timestamp') ?? '';
+    createdAtRaw instanceof Date
+      ? createdAtRaw.toISOString()
+      : typeof createdAtRaw === 'string' && createdAtRaw.length > 0
+      ? createdAtRaw
+      : '';
 
   if (!id || !title || !content) return null;
 

@@ -1,7 +1,6 @@
 import * as Location from 'expo-location';
+import { getApiBaseUrl } from '@/lib/api-config';
 import { AuthService } from './auth';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 // Declare interval for getting user location every 10 minutes
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -28,7 +27,7 @@ export const MapService = {
         const token = await AuthService.getToken();
         if (!token) return;
 
-        await AuthService.authenticatedFetch(`${API_URL}/map/location`, {
+        await AuthService.authenticatedFetch(`${getApiBaseUrl()}/map/location`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ latitude, longitude, timestamp: new Date().toISOString() }),
@@ -48,6 +47,8 @@ export const MapService = {
                 const { latitude, longitude } = await MapService.getCurrentLocation();
                 await MapService.sendLocationToAPI(latitude, longitude);
             }, 600000); // 10 minutes
+        }).catch(err => {
+            console.warn('Location tracking error:', err);
         });
     },
 
